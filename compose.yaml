@@ -1,23 +1,23 @@
 services:
   mysql:
-    container_name: mysql
     image: mysql:8.4
     ports:
       - "3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: ticogames
-      MYSQL_USER: ticogames
-      MYSQL_PASSWORD: ticogames
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_DATABASE:-ticogames}
+      MYSQL_USER: ${DB_USERNAME:-ticogames}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-ticogames}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--protocol=tcp"]
+      test: ["CMD-SHELL", 'MYSQL_PWD="$${MYSQL_PASSWORD}" mysql --protocol=TCP -h 127.0.0.1 -u "$${MYSQL_USER}" "$${MYSQL_DATABASE}" -e "SELECT 1" >/dev/null 2>&1']
       interval: 5s
-      retries: 10
+      timeout: 3s
+      retries: 20
+      start_period: 30s
 
   php:
-    container_name: php
     build:
       context: .
       dockerfile: Dockerfile.dev
@@ -28,6 +28,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - php_vendor:/app/vendor
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/up"]
       interval: 5s
@@ -35,5 +36,18 @@ services:
       retries: 20
       start_period: 30s
 
+  node:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile.dev
+    init: true
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./front-end:/app
+      - node_modules:/app/node_modules
+
 volumes:
   mysql_data:
+  php_vendor:
+  node_modules:

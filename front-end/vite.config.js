@@ -10,6 +10,18 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
+  server: {
+    watch: {
+      // Detect changes made on Windows through the Docker bind mount.
+      usePolling: true,
+    },
+    proxy: {
+      '/api': {
+        target: 'http://php:8000',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
