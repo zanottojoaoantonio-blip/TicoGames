@@ -1,59 +1,128 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# TicoGames
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Projeto final de curso: loja de jogos físicos e consoles, com backend Laravel, banco MySQL e frontend Vue.
 
-## About Laravel
+## Etapa atual: 2 — Inicialização do Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+O projeto já tem a estrutura do Laravel 12. Nesta etapa, preparamos o ambiente e verificamos o backend e sua conexão com o MySQL. As tabelas e funcionalidades da loja serão implementadas nas próximas etapas.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+A modelagem está em [docs/data-model.md](docs/data-model.md).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Conceitos
 
-## Learning Laravel
+- **Composer:** instala as bibliotecas PHP nas versões registradas em `composer.lock`.
+- **Artisan:** ferramenta de comandos do Laravel, como gerar a chave da aplicação.
+- **Dockerfile.dev:** prepara o PHP para desenvolvimento.
+- **Compose:** organiza os serviços `php`, `mysql` e `node` e a comunicação entre eles.
+- **.env:** guarda configurações locais e não é enviado ao Git. O `.env.example` serve de modelo.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Aproveitamos o Compose existente em vez de reinstalar o Laravel ou adicionar o Laravel Sail, mantendo uma única configuração de Docker para estudar.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Primeira inicialização
 
-## Laravel Sponsors
+Abra o Docker Desktop e execute no PowerShell, na pasta do projeto:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```powershell
+# Cria a configuração local sem sobrescrever um .env existente.
+if (-not (Test-Path -LiteralPath .env)) {
+    Copy-Item -LiteralPath .env.example -Destination .env
+}
 
-### Premium Partners
+# Valida o Compose sem mostrar as credenciais.
+docker compose config --quiet
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Constrói a imagem PHP e inicia o banco e o backend em segundo plano.
+# O serviço php instala as dependências antes de iniciar o servidor.
+docker compose up -d --build mysql php
 
-## Contributing
+# Acompanha a inicialização; Ctrl+C encerra apenas a visualização do log.
+docker compose logs -f php
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Quando o log mostrar que o servidor iniciou, encerre a visualização com Ctrl+C e execute:
 
-## Code of Conduct
+```powershell
+# Gera a chave de criptografia no .env, apenas na primeira preparação.
+docker compose exec php php artisan key:generate
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Descarta configurações antigas em cache após preparar o .env.
+docker compose exec php php artisan config:clear
+```
 
-## Security Vulnerabilities
+O primeiro `php` identifica o serviço do Compose; o segundo é o programa executado dentro dele.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Abra [http://localhost:8000](http://localhost:8000). A página padrão do Laravel deve aparecer. A rota [http://localhost:8000/up](http://localhost:8000/up) verifica a inicialização da aplicação, mas não a conexão com o banco.
 
-## License
+## Configuração escolhida
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+O `.env.example` tem comentários explicando cada bloco.
+
+| Configuração | Valor | Motivo |
+| --- | --- | --- |
+| `APP_NAME` | `TicoGames` | Identifica o projeto. |
+| `DB_CONNECTION` | `mysql` | Banco escolhido para a loja. |
+| `DB_HOST` | `mysql` | Nome do serviço do banco na rede Docker. |
+| `SESSION_DRIVER` | `file` | Sessões em arquivos, sem tabela nesta etapa. |
+| `CACHE_STORE` | `file` | Cache em arquivos, sem Redis ou tabela. |
+| `QUEUE_CONNECTION` | `sync` | Tarefas executadas na própria requisição, sem processo de fila separado. |
+| `MAIL_MAILER` | `log` | Emails registrados no log em vez de enviados. |
+
+Sessões e cache poderiam usar o banco, mas arquivos atendem ao desenvolvimento local e permitem iniciar sem migrations. Isso não muda a decisão de salvar o carrinho autenticado no MySQL quando essa funcionalidade for implementada.
+
+As credenciais de exemplo e `APP_DEBUG=true` são para desenvolvimento local. A chave `APP_KEY` deve ser gerada, não copiada para a documentação nem compartilhada.
+
+## Checklist de verificação
+
+```powershell
+# Mostra os contêineres e seus estados de saúde.
+docker compose ps
+
+# Mostra a versão do Laravel instalada.
+docker compose exec php php artisan --version
+
+# Conecta ao MySQL e mostra informações do banco.
+docker compose exec php php artisan db:show
+
+# Executa os testes que já acompanham o projeto.
+# Eles ainda não comprovam funcionalidades da loja nem a conexão MySQL.
+docker compose exec php php artisan test
+```
+
+- [ ] Os serviços `mysql` e `php` estão ativos e saudáveis.
+- [ ] O Artisan informa uma versão Laravel 12.x.
+- [ ] A página inicial responde sem erro.
+- [ ] A rota `/up` responde com HTTP 200.
+- [ ] `db:show` acessa o banco `ticogames` pelo driver MySQL.
+- [ ] Os testes existentes passam.
+- [ ] `.env` não aparece como arquivo a adicionar ao Git.
+
+O banco pode estar vazio nesta etapa. Não execute migrations ou seeders agora: as migrations serão tratadas na etapa 4. O comando padrão `composer run setup` também executa migrations e não é o caminho usado neste roteiro.
+
+## Uso diário
+
+```powershell
+# Inicia o ambiente preparado; não precisa gerar a chave novamente.
+docker compose up -d mysql php
+
+# Interrompe os serviços sem remover os dados do banco.
+docker compose stop
+```
+
+O Vue já existe em `front-end/`, mas sua implementação fica para a etapa 9. Para iniciar também seu servidor de desenvolvimento quando necessário:
+
+```powershell
+# Inicia o Vue na porta 5173 e instala suas dependências.
+docker compose up -d --build node
+```
+
+## Estrutura para as próximas etapas
+
+- `app/Models`: classes que representam os dados e relacionamentos.
+- `database/migrations`: arquivos que criam e alteram tabelas.
+- `database/seeders`: dados iniciais e de demonstração.
+- `routes/web.php`: rotas web; por enquanto contém a página padrão.
+- `config/`: configurações do Laravel, que podem ler o `.env`.
+- `storage/`: arquivos gerados, sessões, cache e logs.
+- `front-end/`: projeto Vue separado do backend.
+
+A próxima etapa é a criação dos Models, após a conclusão desta etapa e o usuário dizer “próximo”.
