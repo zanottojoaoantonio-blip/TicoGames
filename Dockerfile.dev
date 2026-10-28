@@ -1,17 +1,26 @@
 FROM php:8.4-cli-trixie
 
+# Disponibiliza o Composer para instalar as dependências PHP do projeto.
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
+# Instala as bibliotecas e extensões usadas pelo Laravel no desenvolvimento.
+# pdo_mysql conecta ao MySQL; intl permite formatar os dados de comandos como db:show.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         unzip \
+        libicu-dev \
         libzip-dev \
-    && docker-php-ext-install pdo_mysql zip bcmath pcntl \
+    && docker-php-ext-install pdo_mysql zip bcmath pcntl intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Permite ao Composer consultar o Git da pasta montada, cujo dono é o usuário do computador.
+RUN git config --system --add safe.directory /app
+
+# Os arquivos do projeto são montados nesta pasta pelo Compose.
 WORKDIR /app
 
+# O servidor de desenvolvimento atende nesta porta dentro do contêiner.
 EXPOSE 8000
 
-# Install into the vendor volume after Compose mounts the project.
+# Instala as dependências no volume vendor e verifica o PHP antes de iniciar o servidor.
 CMD ["sh", "-c", "composer install --no-interaction --prefer-dist && composer check-platform-reqs && exec php artisan serve --host=0.0.0.0 --port=8000"]
