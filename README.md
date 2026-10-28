@@ -8,6 +8,8 @@ O projeto já tem a estrutura do Laravel 12. Nesta etapa, preparamos o ambiente 
 
 A modelagem está em [docs/data-model.md](docs/data-model.md).
 
+Para continuar em outro computador ou em uma nova conversa, leia [gpt.md](gpt.md): ele registra as decisões, as verificações realizadas e o próximo passo.
+
 ## Conceitos
 
 - **Composer:** instala as bibliotecas PHP nas versões registradas em `composer.lock`.
