@@ -1,6 +1,6 @@
 # TicoGames — contexto para continuar o projeto
 
-Última atualização: 28/10/2026.
+Última atualização: 29/10/2026.
 
 ## Leia isto primeiro
 
@@ -266,6 +266,30 @@ docker compose exec php php artisan test
 ```
 
 Em um banco novo, reproduza a estrutura com `docker compose exec php php artisan migrate`, conforme `docs/migrations.md`, e carregue os exemplos com `docker compose exec php php artisan db:seed`, conforme `docs/seeders.md`. O comando `composer run setup` não é o roteiro usado neste projeto.
+
+## Prompt reutilizável — Controller e Service linha por linha
+
+Registrado a pedido do usuário em 29/10/2026. Aplicar quando ele pedir novamente esse tipo de explicação, sem iniciar outra etapa ou alterar o código por conta própria.
+
+Pedido original: “pode me explicar um controller que tenha mais ou menos o que todos tem linha por linha e um service do mesmo jeito”.
+
+Prompt para copiar e reutilizar:
+
+> Leia os arquivos atuais deste projeto e escolha um Controller e seu Service que representem o padrão usado nos demais CRUDs. Use CategoryController e CategoryService se ainda forem bons exemplos. Explique em português, linha por linha, para que eu consiga entender e apresentar o projeto para uma banca. Não altere o código nem avance de etapa.
+>
+> Antes do código, explique as responsabilidades do Controller, do Service e do Model. Mostre links dos arquivos e utilize os números reais das linhas. Explique todas as linhas com código; informe de uma vez o papel dos comentários, linhas em branco e chaves.
+>
+> Detalhe namespace, imports use, classe, herança, construtor, injeção de dependência, propriedades e visibilidade public/private. Explique também $this, variáveis, parâmetros, tipos de retorno, return, ->, ::, arrays e chamadas encadeadas. Não apenas repita os comentários: mostre o que cada expressão faz e em qual ordem ela é executada.
+>
+> Percorra as cinco ações: listar, consultar por ID, cadastrar, atualizar e excluir ou desativar. Explique a validação, o route model binding, as regras de unicidade e ignore, as consultas do Eloquent, as contagens de relacionamentos, a criação, a atualização, o refresh e as exceções que aparecerem no exemplo. Quando uma expressão juntar várias operações, desmonte-a em passos equivalentes apenas para explicar, sem editar o arquivo.
+>
+> Relacione cada ação ao método HTTP, à URL, ao corpo enviado, ao método do Controller, ao método do Service, à operação no banco e à resposta recebida no Thunder Client. Explique o caminho completo de ida e volta e onde ele para em caso de erro. Mostre os status 200, 201, 204, 404 e 422 quando aplicáveis e indique quando a resposta não tem corpo. Use exemplos JSON; se resumir uma resposta, avise quais campos foram omitidos.
+>
+> Ao final, mostre o que se repete nos outros CRUDs e quais diferenças exigem atenção, como relacionamentos, transações e desativação de produtos. Termine com um checklist curto para eu conferir o comportamento no Thunder Client. Mantenha os nomes do código em inglês e as explicações em português.
+
+Forma curta de pedir novamente:
+
+> Explique um Controller e seu Service linha por linha, seguindo o prompt reutilizável salvo em docs/gpt.md.
 
 ## Mensagem sugerida para retomar
 
