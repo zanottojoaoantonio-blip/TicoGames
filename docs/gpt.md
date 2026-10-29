@@ -4,11 +4,11 @@
 
 ## Leia isto primeiro
 
-Este arquivo registra o contexto do projeto para continuar em outro computador ou em uma nova conversa. Leia também `docs/data-model.md`, `docs/migrations.md` e `docs/README.md`, depois confira os arquivos atuais antes de alterar código. Esses caminhos são relativos à raiz do projeto.
+Este arquivo registra o contexto para continuar em outro computador ou conversa. Leia também `docs/data-model.md`, `docs/migrations.md`, `docs/seeders.md`, `docs/crud-catalog.md`, `docs/crud-products.md` e `docs/README.md`. Confira os arquivos atuais antes de alterar código. Os caminhos são relativos à raiz.
 
-**As etapas 1 a 4 estão concluídas. Os 10 Models estão revisados e as 15 migrations foram aplicadas no MySQL: 12 tabelas de negócio e 8 técnicas, totalizando 20. Os dados temporários de verificação foram desfeitos; apenas `migrations` tem 15 registros de controle. A próxima etapa é a 5: Seeders, somente após o usuário dizer “próximo”.**
+**As etapas 1 a 5 estão concluídas. Na etapa 6, os quatro CRUDs do catálogo estão concluídos: produtos, categorias, plataformas e gêneros, com 20 rotas em `/api`. A suíte passou com 20 testes e 336 asserções. O usuário autorizou implementar os CRUDs juntos e explicar um deles por completo, revogando a preferência anterior de um por vez. O percurso de todas as requisições de produtos está em `docs/crud-products.md`. Não iniciar outra etapa sem “próximo”. Os fluxos de contas, endereços, carrinho e pedidos ainda não estão implementados.**
 
-O último pedido autorizou a etapa 4, com explicações detalhadas das novidades e sem repetir explicações nas migrations semelhantes. Foram criadas e aplicadas 12 migrations novas, além das 3 padrão. Aguardar “próximo” para iniciar os seeders. O usuário confirmou que “porte de console” significa plataforma, como PS5, Xbox Series e Nintendo Switch. Categorias e gêneros ficam separados para atender à busca; a forma de pagamento não será registrada.
+O usuário pediu: “pode fazer todos os crud e me explique os depois pode ser somente 1 mas todos as requisições e suas respectivas respostas desde onde ela inicia até onde termina”. Foram completados os quatro CRUDs do catálogo definidos nesta conversa e explicado produtos do início ao fim. Ele usa Thunder Client; a imagem anterior tinha `www.localhost` e um header Accept incorreto. Orientar `http://localhost:8000/api/products`, sem `www`, e `Accept: application/json`. Não alterar o backend para compensar erros de preenchimento.
 
 O usuário detalhou o fluxo visual do carrinho, mas esclareceu em seguida: “Não, vamos seguir os passos ja delimitados”. Esse fluxo fica planejado para a etapa 9; não implementar o frontend agora. A preparação iniciada não criou telas. O usuário pediu manter `front-end/package-lock.json`; o arquivo foi restaurado e conferido com `package.json`.
 
@@ -20,10 +20,10 @@ Ao concluir uma etapa, atualize este arquivo com o que mudou, o que foi verifica
 - O prazo informado anteriormente foi de duas semanas para fazer, entender e explicar o projeto para uma banca; o prazo não foi reconfirmado nesta revisão.
 - Priorize soluções simples e fáceis de explicar. Evite ferramentas, abstrações e funcionalidades extras sem necessidade.
 - Faça somente uma etapa por vez e espere o usuário dizer “próximo”.
-- Na etapa 3, o usuário inicialmente pediu um Model por vez; depois autorizou revisar `Order` e `OrderItem` juntos. Os 10 estão revisados. Continua valendo fazer uma etapa por vez e aguardar “próximo” antes de iniciar a etapa 5.
+- Na etapa 3, o usuário pediu um Model por vez e depois autorizou `Order` e `OrderItem` juntos. Na etapa 6, começou pedindo um CRUD por vez, mas alterou a preferência ao autorizar os CRUDs do catálogo juntos e pedir a explicação completa de um exemplo, com todas as requisições e respostas. Continua valendo uma etapa por vez.
 - Nas migrations, o usuário pediu explicar bem os conceitos novos e executar diretamente os casos que repetem a mesma estrutura. O guia está em `docs/migrations.md`.
 - O usuário reforçou que toda a configuração de autenticação será feita somente na etapa 8, com Sanctum. Na etapa 3, focar em campos, tipos e relacionamentos para fazer os dados e o sistema funcionarem. Registro, login, sessão, regras de acesso e verificações específicas de segurança ficam para a etapa 8; não ampliar a revisão dos Models com esse trabalho. Os recursos padrão do Laravel já presentes no `User` podem permanecer.
-- Usar somente seeders para os dados iniciais e de demonstração, sem factories, a pedido do usuário. Todos os Models estão sem `HasFactory`, e o `User` está sem a referência à `UserFactory`. A factory padrão ainda existe como arquivo sem uso. Implementar os seeders somente na etapa 5, usando os Models diretamente.
+- Usar somente seeders para os dados iniciais e de demonstração, sem factories, a pedido do usuário. Todos os Models estão sem `HasFactory`, e o `User` está sem a referência à `UserFactory`. A factory padrão ainda existe como arquivo sem uso. Os seeders da etapa 5 usam os Models diretamente; o `DatabaseSeeder` não chama factories.
 - Explique o conceito antes de apresentar ou escrever código.
 - Comente cada parte do código para ajudar no aprendizado.
 - Explique em português; use nomes de tabelas, classes, métodos e campos em inglês.
@@ -40,7 +40,7 @@ E-commerce de jogos físicos e consoles chamado **TicoGames**.
 - Frontend: Vue, com Vite, na pasta `front-end/`.
 - Autenticação planejada: Laravel Sanctum, na etapa 8.
 - Ambiente de origem: Windows com PowerShell. Os caminhos locais e os processos não são transferidos só por copiar este arquivo.
-- Ambiente atual: Linux com Bash, na pasta `/home/joaoantonio/TicoGames`. `docs/README.md` tem instruções para Linux e Windows.
+- A revisão das etapas 1 a 4 ocorreu também em Linux com Bash, na pasta `/home/joaoantonio/TicoGames`. A etapa 5 foi executada no Windows com PowerShell, em `C:\Users\Pichau\TicoGames`. `docs/README.md` tem instruções para Linux e Windows.
 
 ## Etapas combinadas
 
@@ -50,8 +50,8 @@ E-commerce de jogos físicos e consoles chamado **TicoGames**.
 | 2 | Inicializar projeto Laravel | Revisada e concluída em 28/10/2026 na pasta atual. |
 | 3 | Models | Concluída: 10 Models revisados, comentados e com sintaxe PHP verificada. |
 | 4 | Migrations | Concluída: 12 novas, 15 aplicadas no total e verificadas no MySQL. |
-| 5 | Seeders | Próxima, somente após “próximo”; sem factories. |
-| 6 | CRUD básico: Controllers e Services | Pendente. |
+| 5 | Seeders | Concluída: carga fictícia sem factories, repetição verificada e testes aprovados. |
+| 6 | CRUD básico: Controllers e Services | Quatro CRUDs do catálogo concluídos; fluxos de contas, endereços, carrinho e pedidos ainda pendentes. |
 | 7 | CRUD completo: Resources e FormRequests | Pendente. |
 | 8 | Registro, login e sessão com Laravel Sanctum | Pendente. |
 | 9 | Frontend: login/registro, catálogo, administração, carrinho, pagamento simulado e status | Pendente. |
@@ -100,7 +100,39 @@ Campos e regras estão em `docs/data-model.md`; a implementação e as verifica�
 
 Os 10 Models estão revisados: `User`, `Address`, `Category`, `Platform`, `Genre`, `Product`, `Cart`, `CartItem`, `Order` e `OrderItem`. `Category.products()` e `Product.categories()` usam `belongsToMany`, sem `category_id` em `products`. As tabelas de ligação usam relacionamentos muitos-para-muitos do Eloquent, sem classes próprias.
 
-Os Models e as tabelas estão definidos. Os seeders ficam para a etapa 5, os CRUDs para as etapas 6 e 7 e a autenticação para a etapa 8. Não avançar sem o usuário dizer “próximo”.
+Os Models, as tabelas e os seeders estão definidos e verificados. Produtos, categorias, plataformas e gêneros têm CRUD básico. Os fluxos de contas, endereços, carrinho e pedidos permanecem pendentes; não apresentar a compra como pronta. Resources e FormRequests ficam para a etapa 7 e autenticação para a etapa 8. Aguardar “próximo” antes de outra etapa.
+
+## Etapa 6 — quatro CRUDs do catálogo concluídos
+
+- Criados `app/Http/Controllers/ProductController.php`, `app/Services/ProductService.php` e `routes/api.php`; `bootstrap/app.php` carrega a API. Não foi instalado Sanctum nem executado `install:api`.
+- Rotas: GET e POST `/api/products`; GET, PUT/PATCH e DELETE `/api/products/{product}`. O Laravel faz route model binding e retorna 404 para IDs inexistentes.
+- Controller com validação inline e respostas JSON, sem Resources ou FormRequests. Service concentra consultas, gravações e associações. Listagem sem paginação ou filtros nesta parte.
+- Cadastro exige plataforma existente e ao menos uma categoria; gêneros são opcionais. Preço não negativo com até duas casas decimais; estoque inteiro não negativo. IDs inexistentes e repetidos nas listas são rejeitados. A validação existente será organizada em FormRequests na etapa 7.
+- Cadastro e atualização usam transação e `sync()` nas associações. Listas omitidas em atualização são preservadas; listas enviadas substituem as atuais, e `genre_ids: []` remove gêneros. PUT e PATCH aceitam atualização parcial nesta versão.
+- DELETE desativa com `is_active = false`; não remove linha ou vínculos. GET lista ativos e inativos para conferir a administração. Consultar um inativo retorna 200 e permite reativação por PATCH. A listagem pública e as permissões virão nas etapas correspondentes.
+- As rotas ainda não exigem login ou perfil administrativo; essa parte permanece para a etapa 8, conforme o roteiro. Não há CRUD de usuários ou exposição de senhas nesta API.
+- Acrescentado `tests/Feature/ProductApiTest.php` com 10 testes. Na entrega inicial de produtos, a suíte passou com 14 testes e 156 asserções. Após a ampliação do catálogo, passou com 20 testes e 336 asserções em SQLite em memória.
+- Pint passou nos cinco arquivos PHP desta parte; sintaxe verificada no Controller, Service e teste.
+- Verificação HTTP pelo computador: listagem 200 com 7 produtos, ID inexistente 404 e POST vazio 422. Não houve gravação no MySQL nessas requisições; as mutações dos testes ocorreram somente em memória.
+- Após a nova autorização, criados `CategoryController`, `PlatformController`, `GenreController` e seus três Services. Validam `name` como texto obrigatório no POST, até 255 caracteres e único na tabela; atualização permite manter o próprio nome. As respostas incluem `products_count`.
+- Os três Services rejeitam exclusão enquanto houver produtos associados, com 422 e a chave `category`, `platform` ou `genre`. Cadastros sem vínculos são removidos fisicamente com 204. Produtos continuam sendo desativados com `is_active`.
+- `routes/api.php` usa `Route::apiResources()` e registra 20 rotas para os quatro Controllers. Não foram alterados Models, migrations ou dados de seeders nessa ampliação.
+- Criado `tests/Feature/CatalogApiTest.php` com seis testes que percorrem os três cadastros. A suíte passou com 20 testes e 336 asserções. Pint passou nos oito arquivos da ampliação.
+- Verificação HTTP: GET de cada cadastro retornou 200, preservando 7 produtos, 3 categorias, 3 plataformas e 4 gêneros. Os quatro POSTs vazios retornaram 422. Não houve gravação no MySQL nessas verificações.
+- Guia geral em `docs/crud-catalog.md`; percurso de todas as requisições de produtos em `docs/crud-products.md`, desde `public/index.php` até consultas SQL e resposta, incluindo 404, 422 e 204 vazio. O checklist manual fica para o estudante repetir.
+
+## Resultado da etapa 5 — concluída no Windows
+
+- Foram criados `UserSeeder`, `CategorySeeder`, `PlatformSeeder`, `GenreSeeder`, `ProductSeeder` e `AddressSeeder`, chamados em ordem pelo `DatabaseSeeder`, dentro de uma transação.
+- `firstOrCreate` e `firstOrNew` preservam registros encontrados. `syncWithoutDetaching` acrescenta as associações sem apagar outros vínculos. As identificações dos exemplos e suas limitações estão em `docs/seeders.md`.
+- Contas locais de demonstração: `admin@ticogames.test` e `customer@ticogames.test`, com senha inicial `password`. Isso não implementa autenticação; não usar como credenciais de produção.
+- Criada a imagem genérica `public/images/product-placeholder.svg` para os exemplos. Preços e estoques são fictícios.
+- Neste computador o MySQL ainda não tinha a estrutura registrada no ambiente Linux. As 15 migrations existentes foram aplicadas, sem recriar ou apagar tabelas.
+- A carga foi executada duas vezes no MySQL 8.4.13. As contagens permaneceram em 2 usuários, 2 endereços, 3 categorias, 3 plataformas, 4 gêneros, 7 produtos, 11 vínculos de categorias e 7 de gêneros. Carrinhos e pedidos seguem vazios.
+- `tests/Feature/DatabaseSeederTest.php` acrescenta dois testes de integração. A suíte passou com 4 testes e 41 asserções, em SQLite em memória. Foram verificadas as relações e a preservação de alterações após repetir os seeders. Nenhuma alteração dos testes foi aplicada ao MySQL.
+- Sintaxe PHP e Pint passaram nos sete arquivos de seeders e no teste novo.
+- O Docker Desktop 4.97.0 falhou em `docker-secrets-engine/engine.sock` ao ser iniciado pelo terminal. O encerramento normal falhou; foram identificados e encerrados apenas os processos da inicialização com erro e o Docker foi aberto pelo Windows Explorer. O engine voltou a responder e os serviços do projeto ficaram saudáveis. Não houve exclusão de diretórios, reset, reinstalação ou remoção de volumes. A causa específica não foi comprovada; a recuperação vale para esta execução. Se reaparecer, prefira abrir pelo menu Iniciar.
+- Não foram criados Controllers, Services, Resources, FormRequests, autenticação ou telas. Próxima etapa: 6, apenas quando o usuário pedir.
 
 ## O que foi feito até aqui
 
@@ -190,11 +222,11 @@ Esses são resultados anteriores, não uma garantia sobre o ambiente atual ou ou
 - Os 10 Models estão revisados e comentados, com campos e relacionamentos alinhados à modelagem e sem `HasFactory`. A sintaxe de todos passou em `php -l`.
 - Relações persistidas, casts e campos de cópia histórica foram verificados com dados temporários na etapa 4. O preenchimento automático das cópias, o cálculo de totais e o fluxo de criação e pagamento dos pedidos ainda dependem das etapas de CRUD.
 - A etapa 1 alterou documentos. A etapa 2 ajustou o `Dockerfile.dev`, preparou o `.env` local e corrigiu a montagem do ambiente. Nenhuma funcionalidade da loja foi implementada.
-- Existem 15 migrations, todas aplicadas no MySQL: as 3 padrão e as 12 novas da etapa 4. As tabelas de negócio estão sem dados, aguardando os seeders.
-- `database/seeders/DatabaseSeeder.php` é o arquivo inicial, sem os dados da loja implementados nesta sequência.
+- Existem 15 migrations, todas aplicadas no MySQL: as 3 padrão e as 12 novas da etapa 4. A carga inicial foi aplicada na etapa 5; as contagens estão registradas acima.
+- `database/seeders/DatabaseSeeder.php` chama seis seeders, sem factories. A carga preenche catálogo, contas e endereços fictícios, preservando registros encontrados.
 - A rota `/` ainda mostra a página padrão do Laravel.
 - O Vue está inicializado, mas as telas da loja não foram implementadas. Seu serviço não foi necessário para concluir a etapa 2.
-- Sanctum, os CRUDs, carrinho, pedidos e pagamento simulado ainda não foram implementados.
+- Os quatro CRUDs do catálogo estão implementados. Os fluxos de contas, endereços, carrinho, pedidos, pagamento simulado e Sanctum permanecem pendentes.
 - O `Dockerfile` da raiz é separado da configuração de desenvolvimento. O Compose usa `Dockerfile.dev` para PHP e `front-end/Dockerfile.dev` para Vue.
 
 ## Continuar em outro computador
@@ -233,8 +265,8 @@ docker compose exec php php artisan db:show
 docker compose exec php php artisan test
 ```
 
-Em um banco novo, reproduza a estrutura com `docker compose exec php php artisan migrate`, conforme `docs/migrations.md`. Não executar seeders antes da etapa 5. O comando `composer run setup` não é o roteiro usado neste projeto.
+Em um banco novo, reproduza a estrutura com `docker compose exec php php artisan migrate`, conforme `docs/migrations.md`, e carregue os exemplos com `docker compose exec php php artisan db:seed`, conforme `docs/seeders.md`. O comando `composer run setup` não é o roteiro usado neste projeto.
 
 ## Mensagem sugerida para retomar
 
-> Leia docs/gpt.md, docs/README.md, docs/data-model.md e docs/migrations.md deste projeto. As etapas 1 a 4 estão concluídas: os 10 Models estão revisados e as 15 migrations foram aplicadas no MySQL. Espere eu dizer “próximo” para iniciar a etapa 5: Seeders, sem factories. Explique antes do código, comente em português e termine com um checklist, distinguindo o que foi verificado do que está pendente. Autenticação com Sanctum e segurança ficam para a etapa 8.
+> Leia docs/gpt.md, docs/README.md, docs/data-model.md, docs/migrations.md, docs/seeders.md, docs/crud-catalog.md e docs/crud-products.md. As etapas 1 a 5 e os quatro CRUDs básicos do catálogo estão concluídos. Os fluxos de contas, endereços, carrinho e pedidos ainda estão pendentes. Explique em português, comente o código e respeite uma etapa por vez. Quero entender todas as requisições e respostas de pelo menos um exemplo, do início ao fim. Espere eu dizer “próximo” antes de outra etapa. Resources e FormRequests ficam para a etapa 7; Sanctum e permissões para a etapa 8.

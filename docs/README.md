@@ -2,11 +2,13 @@
 
 Projeto final de curso: loja de jogos físicos e consoles, com backend Laravel, banco MySQL e frontend Vue.
 
-## Etapa atual: 4 — Migrations concluídas
+## Etapa atual: 6 — CRUDs básicos do catálogo concluídos
 
-Em 28/10/2026, revisamos o ambiente, os Models e as migrations. O Laravel e o MySQL estão em execução no Docker. As 15 migrations foram aplicadas: 12 tabelas de negócio e 8 técnicas do Laravel, totalizando 20 tabelas. As tabelas de negócio estão sem dados, aguardando a etapa 5, Seeders.
+Após o CRUD de produtos, o usuário autorizou implementar os CRUDs do catálogo juntos e explicar um deles por completo. Produtos, categorias, plataformas e gêneros possuem Controllers, Services e 20 rotas JSON no total. O guia [crud-catalog.md](crud-catalog.md) apresenta os quatro cadastros, e [crud-products.md](crud-products.md) acompanha cada requisição do Thunder Client até o banco e a resposta de volta.
 
-A modelagem define várias categorias e uma plataforma por produto, busca por gênero e plataforma e pagamento simulado confirmado pelo cliente. Os 10 Models estão revisados: `User`, `Address`, `Category`, `Platform`, `Genre`, `Product`, `Cart`, `CartItem`, `Order` e `OrderItem`. O guia [migrations.md](migrations.md) explica os tipos de campos, chaves estrangeiras, índices e regras de exclusão usados na etapa 4. A próxima etapa é a 5, Seeders, após o usuário dizer “próximo”.
+Em 28/10/2026, concluímos os seeders usando os Models diretamente, sem factories. O MySQL possui 20 tabelas e recebeu 2 usuários, 2 endereços, 3 categorias, 3 plataformas, 4 gêneros e 7 produtos, com as associações de categorias e gêneros. Carrinhos e pedidos continuam vazios. A carga foi executada duas vezes sem duplicações.
+
+A modelagem define várias categorias e uma plataforma por produto, gêneros e pagamento simulado confirmado pelo cliente. Os 10 Models, as migrations e os seeders estão preparados. Na etapa 6, os quatro CRUDs do catálogo estão implementados. Resources e FormRequests ficam para a etapa 7 e autenticação para a etapa 8. Os fluxos de contas, endereços, carrinho e pedidos ainda precisam ser implementados, respeitando usuários, estoque e histórico.
 
 No `User`, os comentários explicam os campos permitidos, os recursos padrão do Laravel, os casts e os relacionamentos. A sintaxe PHP foi verificada. Toda a configuração de autenticação, incluindo registro, login, sessão, Sanctum e regras de acesso, fica para a etapa 8, assim como suas verificações específicas de segurança. As relações com os dados da loja foram verificadas com registros temporários na etapa 4.
 
@@ -30,7 +32,7 @@ No `OrderItem`, os campos guardam pedido, produto, nome histórico, preço unit�
 
 A sintaxe PHP dos Models e migrations foi verificada; Pint passou nas 12 migrations novas. As relações, casts, restrições e cópias históricas preenchidas manualmente foram verificados no MySQL, e os registros temporários foram desfeitos. Os 2 testes iniciais continuam passando. O fluxo automático de compra e pagamento ainda será implementado.
 
-Usaremos somente seeders para os dados iniciais e de demonstração, na etapa 5. Todos os Models estão sem suporte a factories.
+Os dados iniciais são criados pelos seeders, sem factories. A suíte atual tem 20 testes aprovados e 336 asserções, incluindo a carga de dados e os quatro CRUDs do catálogo. Autenticação e telas ainda não foram implementadas.
 
 A modelagem está em [data-model.md](data-model.md).
 
@@ -165,7 +167,7 @@ Resultados registrados até a etapa 4, em 28/10/2026:
 
 Os testes iniciais cobrem a resposta da página padrão e uma asserção de exemplo. A conexão MySQL foi verificada separadamente; os testes ainda não validam catálogo, carrinho, pedidos ou pagamento.
 
-As migrations já foram aplicadas neste ambiente. Em um banco novo, execute `docker compose exec php php artisan migrate` para reproduzir a estrutura, conforme [migrations.md](migrations.md). Os seeders ficam para a etapa 5, após “próximo”. O comando padrão `composer run setup` não é o caminho usado neste roteiro.
+As migrations já foram aplicadas neste ambiente. Em um banco novo, execute `docker compose exec php php artisan migrate` para reproduzir a estrutura, conforme [migrations.md](migrations.md), e `docker compose exec php php artisan db:seed` para carregar os exemplos da etapa 5, conforme [seeders.md](seeders.md). O comando padrão `composer run setup` não é o caminho usado neste roteiro.
 
 ## Uso diário
 
@@ -194,4 +196,4 @@ docker compose up -d --build node
 - `storage/`: arquivos gerados, sessões, cache e logs.
 - `front-end/`: projeto Vue separado do backend.
 
-Quando o usuário disser “próximo”, iniciaremos a etapa 5: Seeders, usando os Models diretamente, sem factories.
+Os quatro CRUDs do catálogo estão concluídos. Aguardar o usuário dizer “próximo” antes de iniciar outra parte. O percurso de todas as requisições de produtos está em [crud-products.md](crud-products.md).

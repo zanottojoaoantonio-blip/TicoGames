@@ -208,4 +208,4 @@ Os itens abaixo descrevem comportamentos que serão testados depois da implement
 - Na revisão da etapa 1 foram alterados somente documentos. As regras automáticas de pagamento e as telas ainda não foram implementadas.
 - Na etapa 3, os 10 Models foram revisados. Na etapa 4, as tabelas foram criadas e as relações, casts e restrições foram verificadas no MySQL com dados temporários. As cópias históricas foram preenchidas manualmente para a verificação; seu preenchimento automático pertence ao fluxo de pedidos nas etapas de CRUD.
 
-As etapas 1 a 4 estão concluídas. Aguardar o usuário dizer “próximo” para a etapa 5: Seeders. O contexto atualizado está em `docs/gpt.md`.
+As etapas 1 a 5 estão concluídas. A etapa 6 possui os quatro CRUDs do catálogo concluídos, conforme `docs/crud-catalog.md`; o percurso das requisições de produtos está em `docs/crud-products.md`. Os fluxos de contas, endereços, carrinho e pedidos ainda serão implementados. Aguardar “próximo” antes de outra etapa. O contexto atualizado está em `docs/gpt.md`.
