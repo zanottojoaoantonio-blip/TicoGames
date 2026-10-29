@@ -129,6 +129,9 @@ class ProductApiTest extends TestCase
 
     public function test_invalid_input_is_rejected_without_inserting_a_product(): void
     {
+        // Retirar esta marcação quando os FormRequests forem implementados na etapa 7.
+        $this->markTestSkipped('Validação de entrada adiada para a etapa 7, a pedido do usuário.');
+
         $data = $this->productData();
         $data['name'] = '';
         $data['platform_id'] = 999999;
@@ -160,7 +163,7 @@ class ProductApiTest extends TestCase
     public function test_a_failed_association_rolls_back_the_whole_creation(): void
     {
         // Chama diretamente o Service para provocar uma falha após começar a gravação.
-        // Pela API, esse ID já seria rejeitado pela validação do Controller.
+        // A rejeição desse ID antes da gravação ficará nos FormRequests da etapa 7.
         $data = $this->productData();
         $data['genre_ids'] = [999999];
 

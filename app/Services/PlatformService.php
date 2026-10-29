@@ -10,34 +10,39 @@ use Illuminate\Validation\ValidationException;
 class PlatformService
 {
     // withCount() inclui products_count sem carregar os produtos inteiros.
-    public function getAll(): Collection
+    public function listAll(): Collection
     {
         return Platform::withCount('products')->orderBy('name')->get();
     }
 
-    // Carrega a quantidade de produtos no cadastro encontrado pela rota.
-    public function getOne(Platform $platform): Platform
+    // Busca pelo ID e inclui a contagem; findOrFail() gera 404 se não encontrar.
+    public function findById(int $id): Platform
     {
+        return Platform::withCount('products')->findOrFail($id);
+    }
+
+    // Cria o cadastro; a validação dos dados será feita na etapa de FormRequests.
+    public function create(array $data): Platform
+    {
+        $platform = Platform::create($data);
+
         return $platform->loadCount('products');
     }
 
-    // O Controller já validou os campos que serão gravados pelo Model.
-    public function create(array $data): Platform
+    // Localiza o registro, atualiza os campos recebidos e devolve sua contagem.
+    public function update(int $id, array $data): Platform
     {
-        return $this->getOne(Platform::create($data));
-    }
-
-    // Atualiza os campos recebidos e retorna o registro com sua contagem.
-    public function update(Platform $platform, array $data): Platform
-    {
+        $platform = Platform::findOrFail($id);
         $platform->update($data);
 
-        return $this->getOne($platform->refresh());
+        return $platform->refresh()->loadCount('products');
     }
 
     // Preserva os produtos: os vínculos devem ser ajustados antes da exclusão.
-    public function delete(Platform $platform): void
+    public function delete(int $id): void
     {
+        $platform = Platform::findOrFail($id);
+
         if ($platform->products()->exists()) {
             throw ValidationException::withMessages([
                 'platform' => 'Não é possível excluir uma plataforma que possui produtos associados.',

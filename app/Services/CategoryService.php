@@ -10,34 +10,39 @@ use Illuminate\Validation\ValidationException;
 class CategoryService
 {
     // withCount() inclui products_count sem carregar os produtos inteiros.
-    public function getAll(): Collection
+    public function listAll(): Collection
     {
         return Category::withCount('products')->orderBy('name')->get();
     }
 
-    // Carrega a quantidade de produtos no cadastro encontrado pela rota.
-    public function getOne(Category $category): Category
+    // Busca pelo ID e inclui a contagem; findOrFail() gera 404 se não encontrar.
+    public function findById(int $id): Category
     {
+        return Category::withCount('products')->findOrFail($id);
+    }
+
+    // Cria o cadastro; a validação dos dados será feita na etapa de FormRequests.
+    public function create(array $data): Category
+    {
+        $category = Category::create($data);
+
         return $category->loadCount('products');
     }
 
-    // O Controller já validou os campos que serão gravados pelo Model.
-    public function create(array $data): Category
+    // Localiza o registro, atualiza os campos recebidos e devolve sua contagem.
+    public function update(int $id, array $data): Category
     {
-        return $this->getOne(Category::create($data));
-    }
-
-    // Atualiza os campos recebidos e retorna o registro com sua contagem.
-    public function update(Category $category, array $data): Category
-    {
+        $category = Category::findOrFail($id);
         $category->update($data);
 
-        return $this->getOne($category->refresh());
+        return $category->refresh()->loadCount('products');
     }
 
     // Preserva os produtos: os vínculos devem ser ajustados antes da exclusão.
-    public function delete(Category $category): void
+    public function delete(int $id): void
     {
+        $category = Category::findOrFail($id);
+
         if ($category->products()->exists()) {
             throw ValidationException::withMessages([
                 'category' => 'Não é possível excluir uma categoria que possui produtos associados.',

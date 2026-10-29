@@ -70,6 +70,9 @@ class CatalogApiTest extends TestCase
 
     public function test_names_must_be_present_valid_and_unique(): void
     {
+        // Retirar esta marcação quando os FormRequests forem implementados na etapa 7.
+        $this->markTestSkipped('Validação de entrada adiada para a etapa 7, a pedido do usuário.');
+
         foreach (self::RESOURCES as $resource => $model) {
             $record = $model::firstOrFail();
             $initialCount = $model::count();
@@ -86,6 +89,9 @@ class CatalogApiTest extends TestCase
 
     public function test_updates_cannot_take_another_records_name(): void
     {
+        // Retirar esta marcação quando os FormRequests forem implementados na etapa 7.
+        $this->markTestSkipped('Validação de entrada adiada para a etapa 7, a pedido do usuário.');
+
         foreach (self::RESOURCES as $resource => $model) {
             $record = $model::firstOrFail();
             $other = $model::create(['name' => 'Nome Já Utilizado']);

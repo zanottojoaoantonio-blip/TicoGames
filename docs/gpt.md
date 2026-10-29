@@ -6,7 +6,7 @@
 
 Este arquivo registra o contexto para continuar em outro computador ou conversa. Leia também `docs/data-model.md`, `docs/migrations.md`, `docs/seeders.md`, `docs/crud-catalog.md`, `docs/crud-products.md` e `docs/README.md`. Confira os arquivos atuais antes de alterar código. Os caminhos são relativos à raiz.
 
-**As etapas 1 a 5 estão concluídas. Na etapa 6, os quatro CRUDs do catálogo estão concluídos: produtos, categorias, plataformas e gêneros, com 20 rotas em `/api`. A suíte passou com 20 testes e 336 asserções. O usuário autorizou implementar os CRUDs juntos e explicar um deles por completo, revogando a preferência anterior de um por vez. O percurso de todas as requisições de produtos está em `docs/crud-products.md`. Não iniciar outra etapa sem “próximo”. Os fluxos de contas, endereços, carrinho e pedidos ainda não estão implementados.**
+**As etapas 1 a 5 estão concluídas. Na etapa 6, os quatro CRUDs básicos do catálogo estão implementados: produtos, categorias, plataformas e gêneros, com 20 rotas em `/api`. Em 29/10, os Controllers foram adaptados ao exemplo do usuário: pasta `Controllers/Api`, IDs inteiros, variáveis antes das respostas e `$request->all()`. Os Services usam `listAll()` e `findById()` e recebem IDs na atualização e exclusão. A validação de entrada foi retirada a pedido do usuário e ficará para os FormRequests na etapa 7. A suíte atual passou com 17 testes, 254 asserções e 3 testes de validação explicitamente pendentes. Não iniciar outra etapa sem “próximo”. Os fluxos de contas, endereços, carrinho e pedidos ainda não estão implementados.**
 
 O usuário pediu: “pode fazer todos os crud e me explique os depois pode ser somente 1 mas todos as requisições e suas respectivas respostas desde onde ela inicia até onde termina”. Foram completados os quatro CRUDs do catálogo definidos nesta conversa e explicado produtos do início ao fim. Ele usa Thunder Client; a imagem anterior tinha `www.localhost` e um header Accept incorreto. Orientar `http://localhost:8000/api/products`, sem `www`, e `Accept: application/json`. Não alterar o backend para compensar erros de preenchimento.
 
@@ -102,7 +102,20 @@ Os 10 Models estão revisados: `User`, `Address`, `Category`, `Platform`, `Genre
 
 Os Models, as tabelas e os seeders estão definidos e verificados. Produtos, categorias, plataformas e gêneros têm CRUD básico. Os fluxos de contas, endereços, carrinho e pedidos permanecem pendentes; não apresentar a compra como pronta. Resources e FormRequests ficam para a etapa 7 e autenticação para a etapa 8. Aguardar “próximo” antes de outra etapa.
 
-## Etapa 6 — quatro CRUDs do catálogo concluídos
+## Revisão da etapa 6 em 29/10/2026 — padrão solicitado pelo usuário
+
+- Pedido: refazer os quatro Controllers no estilo do `GenreController` fornecido pelo usuário. Ele confirmou: “vamos se preocupar com validação no proximo passo (form requests e api resources)”. Não mover a validação para os Services nem criar FormRequests ou Resources nesta revisão.
+- Os Controllers estão em `app/Http/Controllers/Api/`, no namespace `App\Http\Controllers\Api`, importam o Controller base e usam construtor em várias linhas. Os resultados são guardados em variáveis antes de `response()->json()`; não há tipos de retorno nas ações, conforme o exemplo.
+- `index()` chama `listAll()`; `show(int $id)` chama `findById($id)`; `store()` e `update()` repassam `$request->all()`. `update()` e `destroy()` também recebem IDs inteiros.
+- Os quatro Services foram adaptados aos novos nomes e assinaturas. `findOrFail()` busca os registros e produz 404 para IDs inexistentes, em vez do route model binding implícito anterior.
+- `routes/api.php` importa os Controllers de `Api` e registra quatro chamadas `Route::apiResource()`, com parâmetro `{id}`. Os caminhos públicos e os status de sucesso continuam os mesmos.
+- Mantidas as contagens de produtos, os relacionamentos e as transações. Produtos continuam sendo desativados. Categorias, plataformas e gêneros continuam bloqueando a exclusão quando utilizados, com 422; isso é uma regra de negócio, não a validação dos campos de entrada adiada.
+- As restrições das migrations e os campos `$fillable` permanecem. Nesta fase, entrada inválida não tem garantia de resposta 422: pode ser aceita ou provocar erro do banco. Enviar dados válidos nos testes manuais até implementar os FormRequests.
+- Os três testes específicos de validação continuam nos arquivos, marcados com `markTestSkipped()` e motivo explícito. Retirar essas marcações ao implementar as regras da etapa 7. Não apresentar esses testes como aprovados.
+- Verificado: Pint passou nos 11 arquivos PHP alterados; suíte em SQLite em memória com **17 testes aprovados, 254 asserções e 3 ignorados**. Nenhum cadastro de teste foi gravado no MySQL por essa suíte.
+- Atualizados os guias do CRUD e este contexto. Próximo passo continua sendo a etapa 7, somente quando solicitado.
+
+## Resultado original da etapa 6 — antes da revisão acima
 
 - Criados `app/Http/Controllers/ProductController.php`, `app/Services/ProductService.php` e `routes/api.php`; `bootstrap/app.php` carrega a API. Não foi instalado Sanctum nem executado `install:api`.
 - Rotas: GET e POST `/api/products`; GET, PUT/PATCH e DELETE `/api/products/{product}`. O Laravel faz route model binding e retorna 404 para IDs inexistentes.

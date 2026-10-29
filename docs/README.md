@@ -32,7 +32,7 @@ No `OrderItem`, os campos guardam pedido, produto, nome histórico, preço unit�
 
 A sintaxe PHP dos Models e migrations foi verificada; Pint passou nas 12 migrations novas. As relações, casts, restrições e cópias históricas preenchidas manualmente foram verificados no MySQL, e os registros temporários foram desfeitos. Os 2 testes iniciais continuam passando. O fluxo automático de compra e pagamento ainda será implementado.
 
-Os dados iniciais são criados pelos seeders, sem factories. A suíte atual tem 20 testes aprovados e 336 asserções, incluindo a carga de dados e os quatro CRUDs do catálogo. Autenticação e telas ainda não foram implementadas.
+Os dados iniciais são criados pelos seeders, sem factories. A suíte atual tem 17 testes aprovados, 254 asserções e 3 testes de validação pendentes. A pedido do usuário, os Controllers estão em `app/Http/Controllers/Api`, recebem IDs inteiros e repassam `$request->all()` aos Services; a validação de entrada ficará para os FormRequests na etapa 7. Autenticação e telas ainda não foram implementadas.
 
 A modelagem está em [data-model.md](data-model.md).
 

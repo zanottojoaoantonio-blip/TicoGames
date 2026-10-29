@@ -2,9 +2,13 @@
 
 Em 28/10/2026, o usuário autorizou implementar os CRUDs do catálogo juntos e explicar um deles por completo depois. Foram concluídos **produtos, categorias, plataformas e gêneros**. Resources e FormRequests permanecem na etapa 7; autenticação e permissões, na etapa 8.
 
+Revisão de 29/10/2026: os Controllers seguem o exemplo fornecido pelo usuário, com IDs inteiros, variáveis antes das respostas e `$request->all()`. A validação de entrada foi retirada a pedido dele e será implementada nos FormRequests; nesta etapa, use corpos válidos. As restrições do banco continuam existindo, mas não substituem a validação HTTP.
+
 ## Estrutura
 
 Cada cadastro tem um Controller e um Service próprios, seguindo o padrão de produtos, sem classes base, interfaces ou repositórios extras.
+
+Os Controllers ficam em `app/Http/Controllers/Api/`, com namespace `App\Http\Controllers\Api`. Os Services continuam em `app/Services/`.
 
 | Cadastro | Controller | Service | URL base |
 | --- | --- | --- | --- |
@@ -21,13 +25,13 @@ Substitua `RESOURCE` por `products`, `categories`, `platforms` ou `genres`.
 
 | Método e caminho | Controller | Service | Resposta |
 | --- | --- | --- | --- |
-| GET `/api/RESOURCE` | `index()` | `getAll()` | 200 e uma lista JSON. |
-| GET `/api/RESOURCE/ID` | `show()` | `getOne()` | 200 e um objeto; 404 se o ID não existir. |
-| POST `/api/RESOURCE` | `store()` | `create()` | 201 e o objeto criado; 422 para entrada inválida. |
-| PATCH ou PUT `/api/RESOURCE/ID` | `update()` | `update()` | 200 e o objeto atualizado; 404 ou 422 em caso de erro. |
+| GET `/api/RESOURCE` | `index()` | `listAll()` | 200 e uma lista JSON. |
+| GET `/api/RESOURCE/ID` | `show(int $id)` | `findById($id)` | 200 e um objeto; 404 se o ID não existir. |
+| POST `/api/RESOURCE` | `store()` | `create($request->all())` | 201 e o objeto criado para dados válidos. |
+| PATCH ou PUT `/api/RESOURCE/ID` | `update()` | `update($id, $request->all())` | 200 e o objeto atualizado; 404 se o ID não existir. |
 | DELETE `/api/RESOURCE/ID` | `destroy()` | `delete()` | 204 sem corpo; a regra de exclusão está abaixo. |
 
-`Route::apiResources()` em `routes/api.php` registra essas 20 rotas. São rotas HTTP; as classes Resources para organizar o JSON serão estudadas na etapa 7.
+As quatro chamadas `Route::apiResource()` em `routes/api.php` registram essas 20 rotas, com parâmetro `{id}`. O Controller passa o ID ao Service, que busca com `findOrFail()` e gera 404 quando não encontra. São rotas HTTP; as classes Resources para organizar o JSON serão estudadas na etapa 7.
 
 ## Categorias, plataformas e gêneros
 
@@ -39,9 +43,9 @@ Os três possuem o campo `name`. Para um POST em categorias, por exemplo:
 }
 ```
 
-O nome é obrigatório, deve ser texto, ter no máximo 255 caracteres e ser único na respectiva tabela. Na atualização, o próprio registro é ignorado na busca por duplicação: manter o nome atual é permitido.
+O cadastro espera `name` como texto, até 255 caracteres e único na tabela. As regras de validação HTTP, incluindo a exceção do próprio registro na atualização, serão feitas nos FormRequests. Por enquanto, a coluna mantém a restrição de unicidade no banco; não espere resposta 422 de validação para um nome repetido.
 
-A resposta inclui `id`, `name`, `created_at`, `updated_at` e `products_count`. `withCount()` calcula a quantidade de produtos sem carregar os produtos inteiros na listagem; `loadCount()` faz isso no detalhe.
+A resposta inclui `id`, `name`, `created_at`, `updated_at` e `products_count`. `withCount()` calcula a quantidade de produtos sem carregar os produtos inteiros na listagem e na busca por ID; `loadCount()` acrescenta a contagem depois de criar ou atualizar.
 
 Exemplo resumido de resposta com status 201, omitindo as datas apenas nesta explicação:
 
@@ -92,14 +96,15 @@ O guia [crud-products.md](crud-products.md) contém os corpos de exemplo e o **p
 
 ## Verificações realizadas
 
-- [x] Pint passou nos oito arquivos desta ampliação: seis classes novas, rotas e teste.
-- [x] Suíte com **20 testes e 336 asserções** passou em SQLite em memória.
+- [x] Pint passou nos 11 arquivos PHP da revisão: quatro Controllers, quatro Services, rotas e dois arquivos de testes.
+- [x] Suíte com **17 testes aprovados, 254 asserções e 3 testes de validação ignorados** em SQLite em memória.
 - [x] Os três cadastros foram testados em criação, listagem, consulta, atualização e exclusão.
-- [x] Nomes obrigatórios, tipos, tamanho máximo, duplicação e renomeação foram verificados.
+- [x] Renomeação com dados válidos verificada. Validação de nomes obrigatórios, tipos, tamanho e duplicação fica pendente para a etapa 7.
 - [x] Exclusão de classificações utilizadas foi rejeitada, preservando os vínculos.
 - [x] IDs inexistentes retornaram 404; `route:list --path=api` mostrou as 20 rotas.
-- [x] No MySQL, as quatro listagens responderam 200, com 7 produtos, 3 categorias, 3 plataformas e 4 gêneros. POSTs vazios foram rejeitados com 422.
-- [x] As verificações HTTP não alteraram os dados de demonstração.
+- [x] Os cadastros e alterações dos testes ocorreram no SQLite em memória, sem gravar no MySQL.
+
+Os três testes de validação estão preservados com `markTestSkipped()`; remover essa marcação ao implementar os FormRequests. Antes desta revisão, havia validação inline e a suíte tinha 20 testes aprovados. Esse resultado anterior não descreve a validação disponível agora.
 
 Os testes estão em `tests/Feature/CatalogApiTest.php` e `tests/Feature/ProductApiTest.php`.
 
@@ -109,7 +114,7 @@ Os testes estão em `tests/Feature/CatalogApiTest.php` e `tests/Feature/ProductA
 - [ ] Executar GET nas quatro URLs base e conferir os dados.
 - [ ] Criar uma categoria, uma plataforma e um gênero de teste; guardar os IDs retornados.
 - [ ] Consultar os novos IDs e atualizar os nomes com PATCH.
-- [ ] Repetir um nome e conferir 422.
+- [ ] Na etapa 7, reativar os testes de validação e conferir nomes vazios ou repetidos com resposta 422.
 - [ ] Excluir os registros de teste sem produtos e conferir 204; consultar novamente e conferir 404.
 - [ ] Tentar excluir uma classificação utilizada e conferir 422, sem perda de dados.
 - [ ] Repetir o ciclo de produtos do outro guia, incluindo desativação e consulta posterior.

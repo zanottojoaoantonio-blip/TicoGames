@@ -11,15 +11,15 @@ class ProductService
 {
     // Lista todos os cadastros, inclusive inativos, para conferir o CRUD administrativo.
     // with() carrega os relacionamentos e evita consultar cada associação separadamente.
-    public function getAll(): Collection
+    public function listAll(): Collection
     {
         return Product::with(['platform', 'categories', 'genres'])->orderBy('id')->get();
     }
 
-    // Acrescenta os relacionamentos ao produto que o Laravel encontrou pela rota.
-    public function getOne(Product $product): Product
+    // Busca pelo ID com os relacionamentos; findOrFail() gera 404 se não encontrar.
+    public function findById(int $id): Product
     {
-        return $product->load(['platform', 'categories', 'genres']);
+        return Product::with(['platform', 'categories', 'genres'])->findOrFail($id);
     }
 
     // Cadastra os campos do produto e as associações em uma única transação.
@@ -38,14 +38,16 @@ class ProductService
             $product->categories()->sync($categoryIds);
             $product->genres()->sync($genreIds);
 
-            // refresh() também lê padrões definidos pelo banco, como is_active = true.
-            return $this->getOne($product->refresh());
+            // Relê o cadastro com os padrões do banco e os relacionamentos.
+            return $this->findById($product->id);
         });
     }
 
     // Atualiza os campos enviados, preservando os que não foram informados.
-    public function update(Product $product, array $data): Product
+    public function update(int $id, array $data): Product
     {
+        $product = Product::findOrFail($id);
+
         return DB::transaction(function () use ($product, $data) {
             // null significa que a lista não foi enviada; [] permite retirar todos os gêneros.
             $categoryIds = $data['category_ids'] ?? null;
@@ -63,13 +65,14 @@ class ProductService
                 $product->genres()->sync($genreIds);
             }
 
-            return $this->getOne($product->refresh());
+            return $this->findById($product->id);
         });
     }
 
     // Retira o produto de oferta, preservando seu ID, associações e histórico.
-    public function delete(Product $product): void
+    public function delete(int $id): void
     {
+        $product = Product::findOrFail($id);
         $product->update(['is_active' => false]);
     }
 }
