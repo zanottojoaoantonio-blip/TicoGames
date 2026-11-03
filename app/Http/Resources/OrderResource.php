@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class OrderResource extends JsonResource
+{
+    // Seleciona explicitamente a saída, sem expor senha ou dados de outra conta.
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'status' => $this->status,
+            'total' => $this->total,
+            'shipping_recipient_name' => $this->shipping_recipient_name,
+            'shipping_postal_code' => $this->shipping_postal_code,
+            'shipping_street' => $this->shipping_street,
+            'shipping_number' => $this->shipping_number,
+            'shipping_complement' => $this->shipping_complement,
+            'shipping_neighborhood' => $this->shipping_neighborhood,
+            'shipping_city' => $this->shipping_city,
+            'shipping_state' => $this->shipping_state,
+            'items' => OrderItemResource::collection($this->whenLoaded('items')),
+        ];
+    }
+}

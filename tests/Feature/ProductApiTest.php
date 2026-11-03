@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Genre;
 use App\Models\Platform;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\ProductService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,6 +23,7 @@ class ProductApiTest extends TestCase
 
         // Reutiliza os dados de demonstração; não utiliza factories.
         $this->seed();
+        $this->actingAs(User::where('role', 'admin')->firstOrFail());
     }
 
     public function test_products_can_be_listed_with_their_relationships(): void
@@ -216,6 +218,37 @@ class ProductApiTest extends TestCase
             $this->assertDatabaseCount('products', 7);
             $this->assertDatabaseCount('category_product', 11);
         }
+    }
+
+    public function test_invalid_updates_preserve_product_data(): void
+    {
+        $product = Product::firstOrFail();
+
+        $this->patchJson('/api/products/'.$product->id, [
+            'price' => '-1',
+            'stock' => 4294967296,
+            'category_ids' => [],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['price', 'stock', 'category_ids']);
+
+        $this->assertSame($product->price, $product->fresh()->price);
+        $this->assertSame($product->stock, $product->fresh()->stock);
+    }
+
+    public function test_resources_preserve_public_fields_and_unvalidated_input_is_ignored(): void
+    {
+        $data = $this->productData();
+        $data['created_at'] = '2000-01-01 00:00:00';
+
+        $response = $this->postJson('/api/products', $data)->assertCreated();
+        $product = Product::findOrFail($response->json('data.id'));
+
+        $this->assertNotSame('2000-01-01 00:00:00', $product->created_at->format('Y-m-d H:i:s'));
+        // Mantém os campos públicos locais, usando a data do banco em vez da entrada ignorada.
+        $response->assertJsonPath('data.created_at', $product->created_at->toISOString())
+            ->assertJsonPath('data.platform_id', $product->platform_id)
+            ->assertJsonMissingPath('data.categories.0.pivot')
+            ->assertJsonMissingPath('data.genres.0.pivot');
     }
 
     // Prepara um corpo JSON válido com os IDs efetivamente criados pelos seeders.

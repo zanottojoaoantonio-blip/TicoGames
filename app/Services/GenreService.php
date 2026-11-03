@@ -12,13 +12,17 @@ class GenreService
     // withCount() inclui products_count sem carregar os produtos inteiros.
     public function listAll(): Collection
     {
-        return Genre::withCount('products')->orderBy('name')->get();
+        $genres = Genre::withCount('products')->orderBy('name')->get();
+
+        return $genres;
     }
 
     // Busca pelo ID e inclui a contagem; findOrFail() gera 404 se não encontrar.
     public function findById(int $id): Genre
     {
-        return Genre::withCount('products')->findOrFail($id);
+        $genre = Genre::withCount('products')->findOrFail($id);
+
+        return $genre;
     }
 
     // Cria o cadastro usando os campos validados pelo FormRequest.
@@ -26,7 +30,9 @@ class GenreService
     {
         $genre = Genre::create($data);
 
-        return $genre->loadCount('products');
+        $genre = $genre->loadCount('products');
+
+        return $genre;
     }
 
     // Localiza o registro, atualiza os campos recebidos e devolve sua contagem.
@@ -35,7 +41,9 @@ class GenreService
         $genre = Genre::findOrFail($id);
         $genre->update($data);
 
-        return $genre->refresh()->loadCount('products');
+        $genre = $genre->refresh()->loadCount('products');
+
+        return $genre;
     }
 
     // Preserva os produtos: os vínculos devem ser ajustados antes da exclusão.

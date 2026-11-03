@@ -1,5 +1,7 @@
 # CRUD de produtos — etapas 6 e 7
 
+> Estado após a integração de 03/11/2026: o backend já possui Sanctum e fluxos de contas, endereços, carrinho e pedidos. Escritas no catálogo exigem sessão e perfil admin; consultas públicas de produtos mostram somente ativos. Consulte [authentication.md](authentication.md) e [account-checkout.md](account-checkout.md) antes dos testes manuais. Os números de testes anteriores a esta integração são históricos.
+
 Atualizado em 03/11/2026. O CRUD de produtos utiliza Controller, Service, FormRequests e API Resource. O Controller mantém o estilo solicitado: namespace `Api`, IDs inteiros e variáveis antes do retorno.
 
 ## Conceitos antes do código
@@ -33,7 +35,7 @@ Usamos Services para concentrar as operações e as associações em um lugar re
 | `app/Http/Resources/ProductResource.php` | Define as colunas e relacionamentos enviados em `data`. |
 | `tests/Feature/ProductApiTest.php` | Verifica o CRUD, a validação e o rollback da transação. |
 
-Autenticação e permissões permanecem na etapa 8. Os FormRequests retornam `true` em `authorize()` nesta etapa. O guia [requests-resources.md](requests-resources.md) explica as classes de entrada e saída.
+Autenticação e permissões são verificadas pelos middlewares das rotas. Os FormRequests retornam `true` em `authorize()` e validam os campos. O guia [requests-resources.md](requests-resources.md) explica as classes de entrada e saída.
 
 ## Como ler o Controller
 
@@ -118,7 +120,7 @@ Resposta resumida: apenas dois produtos e alguns campos; a resposta real tem dat
 }
 ```
 
-Esta listagem administrativa inicial inclui ativos e inativos. Não há paginação ou filtros nesta etapa.
+Administradores consultam ativos e inativos; visitantes consultam apenas ativos. Não há paginação nesta etapa.
 
 ### 2. Cadastro
 
@@ -185,7 +187,7 @@ Trecho resumido; os demais campos e relacionamentos também são enviados:
 }
 ```
 
-Atualizar estoque no cadastro não cria compra ou pagamento. O fluxo de pedidos ainda será implementado.
+Atualizar estoque no cadastro não cria compra ou pagamento. O fluxo de pedidos utiliza os endpoints próprios descritos em `account-checkout.md`.
 
 ### 5. Desativação e reativação
 
@@ -222,8 +224,8 @@ Os erros não têm a chave externa `data`. O header `Accept` solicita JSON; as m
 
 ## Verificações executadas
 
-- [x] Pint passou nos 21 arquivos PHP da etapa 7.
-- [x] Suíte com **21 testes aprovados e 480 asserções**, sem testes ignorados, em SQLite em memória.
+- [x] Pint foi aplicado nos arquivos combinados nesta integração.
+- [x] Suíte com **43 testes aprovados e 660 asserções**, sem testes ignorados, em SQLite em memória.
 - [x] Listagem, consulta, criação com e sem gêneros, atualização parcial e substituição de associações.
 - [x] Desativação, reativação e preservação de vínculos.
 - [x] Validação de criação e atualização; entradas inválidas preservam os dados.

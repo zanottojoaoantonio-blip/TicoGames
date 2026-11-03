@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 // Permite atualizar somente os campos enviados, mantendo as regras do cadastro.
 class UpdateProductRequest extends FormRequest
 {
-    // A restrição ao administrador será implementada com Sanctum na etapa 8.
+    // As rotas do catálogo exigem autenticação e perfil de administrador.
     public function authorize(): bool
     {
         return true;

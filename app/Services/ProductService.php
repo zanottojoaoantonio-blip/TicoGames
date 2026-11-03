@@ -11,21 +11,25 @@ class ProductService
 {
     // Lista todos os cadastros, inclusive inativos, para conferir o CRUD administrativo.
     // with() carrega os relacionamentos e evita consultar cada associação separadamente.
-    public function listAll(): Collection
+    public function listAll(bool $includeInactive = true): Collection
     {
-        return Product::with(['platform', 'categories', 'genres'])->orderBy('id')->get();
+        $products = Product::with(['platform', 'categories', 'genres'])->when(! $includeInactive, fn ($query) => $query->where('is_active', true))->orderBy('id')->get();
+
+        return $products;
     }
 
     // Busca pelo ID com os relacionamentos; findOrFail() gera 404 se não encontrar.
-    public function findById(int $id): Product
+    public function findById(int $id, bool $includeInactive = true): Product
     {
-        return Product::with(['platform', 'categories', 'genres'])->findOrFail($id);
+        $product = Product::with(['platform', 'categories', 'genres'])->when(! $includeInactive, fn ($query) => $query->where('is_active', true))->findOrFail($id);
+
+        return $product;
     }
 
     // Cadastra os campos do produto e as associações em uma única transação.
     public function create(array $data): Product
     {
-        return DB::transaction(function () use ($data) {
+        $product = DB::transaction(function () use ($data) {
             // IDs de categorias e gêneros pertencem às tabelas de ligação.
             $categoryIds = $data['category_ids'];
             $genreIds = $data['genre_ids'] ?? [];
@@ -39,8 +43,12 @@ class ProductService
             $product->genres()->sync($genreIds);
 
             // Relê o cadastro com os padrões do banco e os relacionamentos.
-            return $this->findById($product->id);
+            $product = $this->findById($product->id);
+
+            return $product;
         });
+
+        return $product;
     }
 
     // Atualiza os campos enviados, preservando os que não foram informados.
@@ -48,7 +56,7 @@ class ProductService
     {
         $product = Product::findOrFail($id);
 
-        return DB::transaction(function () use ($product, $data) {
+        $product = DB::transaction(function () use ($product, $data) {
             // null significa que a lista não foi enviada; [] permite retirar todos os gêneros.
             $categoryIds = $data['category_ids'] ?? null;
             $genreIds = $data['genre_ids'] ?? null;
@@ -65,8 +73,12 @@ class ProductService
                 $product->genres()->sync($genreIds);
             }
 
-            return $this->findById($product->id);
+            $product = $this->findById($product->id);
+
+            return $product;
         });
+
+        return $product;
     }
 
     // Retira o produto de oferta, preservando seu ID, associações e histórico.

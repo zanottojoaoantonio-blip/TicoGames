@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Genre;
 use App\Models\Platform;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,7 +24,8 @@ class CatalogApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(); // Utiliza os exemplos reais, sem factories.
+        $this->seed();
+        $this->actingAs(User::where('role', 'admin')->firstOrFail()); // Utiliza os exemplos reais, sem factories.
     }
 
     public function test_catalog_lists_and_details_include_product_counts(): void
@@ -82,6 +84,15 @@ class CatalogApiTest extends TestCase
 
             $this->assertDatabaseCount($resource, $initialCount);
         }
+    }
+
+    public function test_validation_errors_are_json_with_a_wildcard_accept_header(): void
+    {
+        // O admin já está autenticado; a validação não deve redirecionar para HTML.
+        $this->json('POST', '/api/categories', ['name' => ''], ['Accept' => '*/*'])
+            ->assertUnprocessable()
+            ->assertHeader('Content-Type', 'application/json')
+            ->assertJsonValidationErrors('name');
     }
 
     public function test_updates_cannot_take_another_records_name(): void

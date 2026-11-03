@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 // Valida as colunas do produto e os IDs usados nas tabelas de ligação.
 class StoreProductRequest extends FormRequest
 {
-    // A restrição ao administrador será implementada com Sanctum na etapa 8.
+    // As rotas do catálogo exigem autenticação e perfil de administrador.
     public function authorize(): bool
     {
         return true;

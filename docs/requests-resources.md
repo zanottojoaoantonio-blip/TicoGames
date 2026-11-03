@@ -1,5 +1,7 @@
 # Etapa 7 — FormRequests e API Resources
 
+> Estado após a integração de 03/11/2026: o backend já possui Sanctum e fluxos de contas, endereços, carrinho e pedidos. Escritas no catálogo exigem sessão e perfil admin; consultas públicas de produtos mostram somente ativos. Consulte [authentication.md](authentication.md) e [account-checkout.md](account-checkout.md) antes dos testes manuais. Os números de testes anteriores a esta integração são históricos.
+
 Concluída em 03/11/2026 para produtos, categorias, plataformas e gêneros. Os Controllers continuam em `app/Http/Controllers/Api`, recebem IDs inteiros e guardam o resultado do Service em uma variável antes de retornar.
 
 ## Responsabilidades
@@ -25,7 +27,7 @@ Usamos uma classe para criar e outra para atualizar: os campos obrigatórios no 
 
 ## Como ler um FormRequest
 
-`extends FormRequest` utiliza o mecanismo de validação do Laravel. `authorize()` retorna `true` nesta etapa; autenticação e permissões continuam reservadas à etapa 8. Isso não implementa login.
+`extends FormRequest` utiliza o mecanismo de validação do Laravel. `authorize()` retorna `true`; os middlewares das rotas verificam a sessão e o perfil necessário antes de validar os campos.
 
 `rules()` devolve um array de campos e regras. No cadastro de categoria, por exemplo:
 
@@ -103,13 +105,13 @@ O caminho de cadastro é: Thunder Client → rota → FormRequest → Controller
 ## Verificações executadas
 
 - [x] Os três testes antes ignorados foram reativados.
-- [x] Suíte com **21 testes aprovados e 480 asserções**, sem testes ignorados, em SQLite em memória.
+- [x] Suíte com **43 testes aprovados e 660 asserções**, sem testes ignorados, em SQLite em memória.
 - [x] Cadastro, consulta, atualização, exclusão e desativação continuam funcionando.
 - [x] Campos obrigatórios, nomes únicos, atualização mantendo o próprio nome e valores inválidos retornam o resultado esperado.
 - [x] Atualizações inválidas preservam preço, estoque e associações.
 - [x] Resources apresentam `data`, mantêm os tipos e omitem `pivot`.
 - [x] IDs inexistentes retornam 404; falha na transação de produtos continua desfazendo a gravação.
-- [x] Pint passou nos 21 arquivos PHP desta etapa.
+- [x] Pint foi aplicado nos arquivos combinados nesta integração.
 
 As gravações dos testes ocorreram somente no SQLite em memória. Não foram executados migrations ou seeders no MySQL nesta etapa.
 
@@ -123,6 +125,6 @@ As gravações dos testes ocorreram somente no SQLite em memória. Não foram ex
 - [ ] Consultar um produto e conferir os relacionamentos sem `pivot`.
 - [ ] Excluir uma classificação sem vínculos e receber 204 sem corpo.
 
-O próximo passo é a etapa 8, com Sanctum, somente quando o usuário solicitar.
+O próximo passo é a etapa 9 (Vue), somente quando o usuário solicitar.
 
 Referências: [FormRequests](https://laravel.com/docs/12.x/validation#form-request-validation) e [API Resources](https://laravel.com/docs/12.x/eloquent-resources).

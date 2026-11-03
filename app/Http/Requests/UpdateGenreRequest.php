@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 // Valida os campos enviados na atualização de gênero.
 class UpdateGenreRequest extends FormRequest
 {
-    // As permissões de acesso serão configuradas na etapa de autenticação.
+    // As rotas verificam autenticação e perfil antes de executar o FormRequest.
     public function authorize(): bool
     {
         return true;

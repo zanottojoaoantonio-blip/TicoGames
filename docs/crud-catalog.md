@@ -1,6 +1,8 @@
 # CRUDs do catálogo — etapas 6 e 7
 
-Os CRUDs de **produtos, categorias, plataformas e gêneros** foram implementados na etapa 6. Em 03/11/2026, a etapa 7 acrescentou os FormRequests e API Resources. Autenticação e permissões continuam na etapa 8.
+> Estado após a integração de 03/11/2026: o backend já possui Sanctum e fluxos de contas, endereços, carrinho e pedidos. Escritas no catálogo exigem sessão e perfil admin; consultas públicas de produtos mostram somente ativos. Consulte [authentication.md](authentication.md) e [account-checkout.md](account-checkout.md) antes dos testes manuais. Os números de testes anteriores a esta integração são históricos.
+
+Os CRUDs de **produtos, categorias, plataformas e gêneros** foram implementados na etapa 6. Em 03/11/2026, a etapa 7 acrescentou os FormRequests e API Resources. Autenticação e permissões da etapa 8 já estão implementadas.
 
 Os Controllers seguem o exemplo do usuário, com IDs inteiros e variáveis antes do retorno. Agora recebem FormRequests específicos e repassam `$request->validated()` ao Service. Os Resources organizam as respostas de sucesso com a chave externa `data`. Veja a explicação das classes em [requests-resources.md](requests-resources.md).
 
@@ -94,12 +96,12 @@ Primeiro ajuste os produtos pelo seu CRUD. Cada produto deve continuar com ao me
 
 Produto é desativado com `is_active = false`, preservando os vínculos e o histórico. A listagem administrativa inicial inclui ativos e inativos.
 
-O guia [crud-products.md](crud-products.md) contém os corpos de exemplo e o **percurso completo de cada requisição**, do Thunder Client até o MySQL e a resposta de volta. A API ainda está sem autenticação; ela será configurada na etapa 8.
+O guia [crud-products.md](crud-products.md) contém os corpos de exemplo e o **percurso completo de cada requisição**, do Thunder Client até o MySQL e a resposta de volta. As rotas de escrita exigem autenticação e perfil admin; consulte o guia de autenticação.
 
 ## Verificações realizadas
 
-- [x] Pint passou nos 21 arquivos PHP da etapa 7: Requests, Resources, Controllers, comentários de Services e testes.
-- [x] Suíte com **21 testes aprovados e 480 asserções**, sem testes ignorados, em SQLite em memória.
+- [x] Pint foi aplicado nos arquivos combinados nesta integração: Requests, Resources, Controllers, comentários de Services e testes.
+- [x] Suíte com **43 testes aprovados e 660 asserções**, sem testes ignorados, em SQLite em memória.
 - [x] Os três cadastros foram testados em criação, listagem, consulta, atualização e exclusão.
 - [x] Nomes obrigatórios, tipos, tamanho, duplicação e renomeação mantendo o próprio nome verificados.
 - [x] Respostas com `data` e relacionamentos de produtos sem `pivot` verificados.
@@ -122,4 +124,4 @@ Os testes estão em `tests/Feature/CatalogApiTest.php` e `tests/Feature/ProductA
 - [ ] Tentar excluir uma classificação utilizada e conferir 422, sem perda de dados.
 - [ ] Repetir o ciclo de produtos do outro guia, incluindo desativação e consulta posterior.
 
-Não foram criados CRUDs de contas, endereços, carrinho ou pedidos nesta entrega de catálogo. Esses fluxos ainda dependem da identidade do usuário, do histórico e das regras de estoque; não devem ser tratados como uma simples edição livre das tabelas. Não iniciar outra etapa sem o usuário pedir.
+Os fluxos de contas, endereços, carrinho e pedidos foram integrados com o commit remoto e estão descritos em `account-checkout.md`. A próxima etapa é o Vue, somente quando solicitado.

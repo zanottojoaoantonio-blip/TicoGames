@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 // Valida os dados de cadastro de categoria antes de executar o Controller.
 class StoreCategoryRequest extends FormRequest
 {
-    // Permite a requisição nesta etapa; as permissões serão definidas com Sanctum.
+    // As rotas verificam autenticação e perfil antes de executar o FormRequest.
     public function authorize(): bool
     {
         return true;

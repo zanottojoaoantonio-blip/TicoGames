@@ -12,13 +12,17 @@ class CategoryService
     // withCount() inclui products_count sem carregar os produtos inteiros.
     public function listAll(): Collection
     {
-        return Category::withCount('products')->orderBy('name')->get();
+        $categories = Category::withCount('products')->orderBy('name')->get();
+
+        return $categories;
     }
 
     // Busca pelo ID e inclui a contagem; findOrFail() gera 404 se não encontrar.
     public function findById(int $id): Category
     {
-        return Category::withCount('products')->findOrFail($id);
+        $category = Category::withCount('products')->findOrFail($id);
+
+        return $category;
     }
 
     // Cria o cadastro usando os campos validados pelo FormRequest.
@@ -26,7 +30,9 @@ class CategoryService
     {
         $category = Category::create($data);
 
-        return $category->loadCount('products');
+        $category = $category->loadCount('products');
+
+        return $category;
     }
 
     // Localiza o registro, atualiza os campos recebidos e devolve sua contagem.
@@ -35,7 +41,9 @@ class CategoryService
         $category = Category::findOrFail($id);
         $category->update($data);
 
-        return $category->refresh()->loadCount('products');
+        $category = $category->refresh()->loadCount('products');
+
+        return $category;
     }
 
     // Preserva os produtos: os vínculos devem ser ajustados antes da exclusão.

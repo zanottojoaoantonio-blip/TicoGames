@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 // Valida os dados de cadastro de plataforma antes de executar o Controller.
 class StorePlatformRequest extends FormRequest
 {
-    // Permite a requisição nesta etapa; as permissões serão definidas com Sanctum.
+    // As rotas verificam autenticação e perfil antes de executar o FormRequest.
     public function authorize(): bool
     {
         return true;

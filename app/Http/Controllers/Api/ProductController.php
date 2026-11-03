@@ -7,6 +7,7 @@ use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Services\ProductService;
+use Illuminate\Http\Request;
 
 // Recebe as requisições de produtos e delega as operações ao Service.
 class ProductController extends Controller
@@ -17,9 +18,9 @@ class ProductController extends Controller
     ) {}
 
     // GET /api/products: busca os cadastros e devolve a lista em JSON.
-    public function index()
+    public function index(Request $request)
     {
-        $products = $this->productService->listAll();
+        $products = $this->productService->listAll($request->user()?->role === 'admin');
 
         return ProductResource::collection($products);
     }
@@ -34,9 +35,9 @@ class ProductController extends Controller
     }
 
     // GET /api/products/{id}: o Service busca o registro ou gera o erro 404.
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
-        $product = $this->productService->findById($id);
+        $product = $this->productService->findById($id, $request->user()?->role === 'admin');
 
         return new ProductResource($product);
     }
