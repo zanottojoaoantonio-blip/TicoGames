@@ -2,13 +2,13 @@
 
 Projeto final de curso: loja de jogos físicos e consoles, com backend Laravel, banco MySQL e frontend Vue.
 
-## Etapa atual: 6 — CRUDs básicos do catálogo concluídos
+## Etapa atual: 7 — FormRequests e API Resources concluídos
 
 Após o CRUD de produtos, o usuário autorizou implementar os CRUDs do catálogo juntos e explicar um deles por completo. Produtos, categorias, plataformas e gêneros possuem Controllers, Services e 20 rotas JSON no total. O guia [crud-catalog.md](crud-catalog.md) apresenta os quatro cadastros, e [crud-products.md](crud-products.md) acompanha cada requisição do Thunder Client até o banco e a resposta de volta.
 
 Em 28/10/2026, concluímos os seeders usando os Models diretamente, sem factories. O MySQL possui 20 tabelas e recebeu 2 usuários, 2 endereços, 3 categorias, 3 plataformas, 4 gêneros e 7 produtos, com as associações de categorias e gêneros. Carrinhos e pedidos continuam vazios. A carga foi executada duas vezes sem duplicações.
 
-A modelagem define várias categorias e uma plataforma por produto, gêneros e pagamento simulado confirmado pelo cliente. Os 10 Models, as migrations e os seeders estão preparados. Na etapa 6, os quatro CRUDs do catálogo estão implementados. Resources e FormRequests ficam para a etapa 7 e autenticação para a etapa 8. Os fluxos de contas, endereços, carrinho e pedidos ainda precisam ser implementados, respeitando usuários, estoque e histórico.
+A modelagem define várias categorias e uma plataforma por produto, gêneros e pagamento simulado confirmado pelo cliente. Os 10 Models, as migrations e os seeders estão preparados. Os quatro CRUDs do catálogo agora têm FormRequests e API Resources; o guia está em [requests-resources.md](requests-resources.md). As respostas de sucesso usam a chave `data`. Autenticação fica para a etapa 8. Os fluxos de contas, endereços, carrinho e pedidos ainda precisam ser implementados, respeitando usuários, estoque e histórico.
 
 No `User`, os comentários explicam os campos permitidos, os recursos padrão do Laravel, os casts e os relacionamentos. A sintaxe PHP foi verificada. Toda a configuração de autenticação, incluindo registro, login, sessão, Sanctum e regras de acesso, fica para a etapa 8, assim como suas verificações específicas de segurança. As relações com os dados da loja foram verificadas com registros temporários na etapa 4.
 
@@ -32,7 +32,7 @@ No `OrderItem`, os campos guardam pedido, produto, nome histórico, preço unit�
 
 A sintaxe PHP dos Models e migrations foi verificada; Pint passou nas 12 migrations novas. As relações, casts, restrições e cópias históricas preenchidas manualmente foram verificados no MySQL, e os registros temporários foram desfeitos. Os 2 testes iniciais continuam passando. O fluxo automático de compra e pagamento ainda será implementado.
 
-Os dados iniciais são criados pelos seeders, sem factories. A suíte atual tem 17 testes aprovados, 254 asserções e 3 testes de validação pendentes. A pedido do usuário, os Controllers estão em `app/Http/Controllers/Api`, recebem IDs inteiros e repassam `$request->all()` aos Services; a validação de entrada ficará para os FormRequests na etapa 7. Autenticação e telas ainda não foram implementadas.
+Os dados iniciais são criados pelos seeders, sem factories. A suíte atual tem 21 testes aprovados e 480 asserções, sem testes ignorados. Os Controllers estão em `app/Http/Controllers/Api`, recebem IDs inteiros e repassam `$request->validated()` aos Services. Os FormRequests validam a entrada e os Resources organizam a saída. Autenticação e telas ainda não foram implementadas.
 
 A modelagem está em [data-model.md](data-model.md).
 
@@ -196,4 +196,4 @@ docker compose up -d --build node
 - `storage/`: arquivos gerados, sessões, cache e logs.
 - `front-end/`: projeto Vue separado do backend.
 
-Os quatro CRUDs do catálogo estão concluídos. Aguardar o usuário dizer “próximo” antes de iniciar outra parte. O percurso de todas as requisições de produtos está em [crud-products.md](crud-products.md).
+Os quatro CRUDs do catálogo, com FormRequests e API Resources, estão concluídos. O próximo passo é a etapa 8, com Sanctum, somente quando o usuário solicitar. O percurso das requisições de produtos está em [crud-products.md](crud-products.md), e as classes de entrada e saída em [requests-resources.md](requests-resources.md).

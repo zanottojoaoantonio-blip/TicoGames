@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Resources\CategoryResource;
 use App\Services\CategoryService;
-use Illuminate\Http\Request;
 
 // Recebe as requisições de categorias e delega as operações ao Service.
 class CategoryController extends Controller
@@ -19,15 +21,16 @@ class CategoryController extends Controller
     {
         $categories = $this->categoryService->listAll();
 
-        return response()->json($categories);
+        return CategoryResource::collection($categories);
     }
 
-    // POST /api/categories: repassa os dados; a validação ficará nos FormRequests.
-    public function store(Request $request)
+    // POST /api/categories: o FormRequest valida antes de executar esta ação.
+    public function store(StoreCategoryRequest $request)
     {
-        $category = $this->categoryService->create($request->all());
+        $category = $this->categoryService->create($request->validated());
 
-        return response()->json($category, 201);
+        // O Resource define os campos; 201 informa que um cadastro foi criado.
+        return (new CategoryResource($category))->response()->setStatusCode(201);
     }
 
     // GET /api/categories/{id}: o Service busca o registro ou gera o erro 404.
@@ -35,15 +38,15 @@ class CategoryController extends Controller
     {
         $category = $this->categoryService->findById($id);
 
-        return response()->json($category);
+        return new CategoryResource($category);
     }
 
-    // PUT ou PATCH /api/categories/{id}: envia o ID e os dados ao Service.
-    public function update(Request $request, int $id)
+    // PUT ou PATCH /api/categories/{id}: envia somente os campos validados ao Service.
+    public function update(UpdateCategoryRequest $request, int $id)
     {
-        $category = $this->categoryService->update($id, $request->all());
+        $category = $this->categoryService->update($id, $request->validated());
 
-        return response()->json($category);
+        return new CategoryResource($category);
     }
 
     // DELETE /api/categories/{id}: exclui se não houver produtos associados e responde sem corpo.

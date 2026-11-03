@@ -115,7 +115,7 @@ Tabela de ligação entre gêneros e produtos. O par deve ser único, impedindo 
 
 ### carts
 
-`id`, `user_id`.
+`id`, `user_id`,`remember_token`.
 
 `user_id` é único: cada cliente tem no máximo um carrinho persistente. Visitantes não geram linhas nessa tabela.
 

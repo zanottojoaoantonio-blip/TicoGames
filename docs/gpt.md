@@ -1,12 +1,12 @@
 # TicoGames — contexto para continuar o projeto
 
-Última atualização: 29/10/2026.
+Última atualização: 03/11/2026.
 
 ## Leia isto primeiro
 
-Este arquivo registra o contexto para continuar em outro computador ou conversa. Leia também `docs/data-model.md`, `docs/migrations.md`, `docs/seeders.md`, `docs/crud-catalog.md`, `docs/crud-products.md` e `docs/README.md`. Confira os arquivos atuais antes de alterar código. Os caminhos são relativos à raiz.
+Este arquivo registra o contexto para continuar em outro computador ou conversa. Leia também `docs/data-model.md`, `docs/migrations.md`, `docs/seeders.md`, `docs/crud-catalog.md`, `docs/crud-products.md`, `docs/requests-resources.md` e `docs/README.md`. Confira os arquivos atuais antes de alterar código. Os caminhos são relativos à raiz.
 
-**As etapas 1 a 5 estão concluídas. Na etapa 6, os quatro CRUDs básicos do catálogo estão implementados: produtos, categorias, plataformas e gêneros, com 20 rotas em `/api`. Em 29/10, os Controllers foram adaptados ao exemplo do usuário: pasta `Controllers/Api`, IDs inteiros, variáveis antes das respostas e `$request->all()`. Os Services usam `listAll()` e `findById()` e recebem IDs na atualização e exclusão. A validação de entrada foi retirada a pedido do usuário e ficará para os FormRequests na etapa 7. A suíte atual passou com 17 testes, 254 asserções e 3 testes de validação explicitamente pendentes. Não iniciar outra etapa sem “próximo”. Os fluxos de contas, endereços, carrinho e pedidos ainda não estão implementados.**
+**As etapas 1 a 5, os quatro CRUDs do catálogo da etapa 6 e seus FormRequests e API Resources da etapa 7 estão concluídos. Em 03/11, foram criados oito FormRequests e quatro Resources para produtos, categorias, plataformas e gêneros. Os Controllers continuam em `Controllers/Api`, com IDs inteiros e variáveis antes do retorno; agora usam `$request->validated()` e devolvem Resources. As respostas de sucesso usam a chave externa `data`. A suíte passou com 21 testes e 480 asserções, sem testes ignorados. O próximo passo é a etapa 8, com Sanctum, somente quando solicitado. Os fluxos de contas, endereços, carrinho e pedidos ainda não estão implementados.**
 
 O usuário pediu: “pode fazer todos os crud e me explique os depois pode ser somente 1 mas todos as requisições e suas respectivas respostas desde onde ela inicia até onde termina”. Foram completados os quatro CRUDs do catálogo definidos nesta conversa e explicado produtos do início ao fim. Ele usa Thunder Client; a imagem anterior tinha `www.localhost` e um header Accept incorreto. Orientar `http://localhost:8000/api/products`, sem `www`, e `Accept: application/json`. Não alterar o backend para compensar erros de preenchimento.
 
@@ -52,7 +52,7 @@ E-commerce de jogos físicos e consoles chamado **TicoGames**.
 | 4 | Migrations | Concluída: 12 novas, 15 aplicadas no total e verificadas no MySQL. |
 | 5 | Seeders | Concluída: carga fictícia sem factories, repetição verificada e testes aprovados. |
 | 6 | CRUD básico: Controllers e Services | Quatro CRUDs do catálogo concluídos; fluxos de contas, endereços, carrinho e pedidos ainda pendentes. |
-| 7 | CRUD completo: Resources e FormRequests | Pendente. |
+| 7 | CRUD completo: Resources e FormRequests | Concluída em 03/11/2026 para os quatro CRUDs do catálogo; guia em `docs/requests-resources.md`. |
 | 8 | Registro, login e sessão com Laravel Sanctum | Pendente. |
 | 9 | Frontend: login/registro, catálogo, administração, carrinho, pagamento simulado e status | Pendente. |
 
@@ -100,7 +100,23 @@ Campos e regras estão em `docs/data-model.md`; a implementação e as verifica�
 
 Os 10 Models estão revisados: `User`, `Address`, `Category`, `Platform`, `Genre`, `Product`, `Cart`, `CartItem`, `Order` e `OrderItem`. `Category.products()` e `Product.categories()` usam `belongsToMany`, sem `category_id` em `products`. As tabelas de ligação usam relacionamentos muitos-para-muitos do Eloquent, sem classes próprias.
 
-Os Models, as tabelas e os seeders estão definidos e verificados. Produtos, categorias, plataformas e gêneros têm CRUD básico. Os fluxos de contas, endereços, carrinho e pedidos permanecem pendentes; não apresentar a compra como pronta. Resources e FormRequests ficam para a etapa 7 e autenticação para a etapa 8. Aguardar “próximo” antes de outra etapa.
+Os Models, as tabelas e os seeders estão definidos e verificados. Produtos, categorias, plataformas e gêneros têm CRUD com FormRequests e API Resources. Os fluxos de contas, endereços, carrinho e pedidos permanecem pendentes; não apresentar a compra como pronta. Autenticação fica para a etapa 8. Aguardar “próximo” antes de outra etapa.
+
+## Etapa 7 — FormRequests e API Resources concluídos em 03/11/2026
+
+- O usuário esclareceu que esperava FormRequests e API Resources implementados. A etapa 7 foi concluída para os quatro CRUDs existentes, preservando o estilo de Controllers com IDs inteiros e variáveis locais.
+- Criados `StoreCategoryRequest`, `UpdateCategoryRequest`, `StorePlatformRequest`, `UpdatePlatformRequest`, `StoreGenreRequest`, `UpdateGenreRequest`, `StoreProductRequest` e `UpdateProductRequest` em `app/Http/Requests/`.
+- Categorias, plataformas e gêneros exigem nome textual, preenchido, até 255 caracteres e único na tabela. Na atualização, o próprio Model encontrado é passado a `ignore()`. Campos omitidos são preservados.
+- Produtos validam textos, plataforma existente, preço não negativo com até duas casas decimais, estoque inteiro não negativo, ao menos uma categoria e IDs existentes e distintos nas listas. Gêneros são opcionais. PUT e PATCH continuam permitindo atualização parcial.
+- As classes de atualização buscam o registro pelo ID da rota antes de validar, mantendo 404 mesmo se o corpo também for inválido. Os Services mantêm suas próprias buscas com `findOrFail()`.
+- `authorize()` retorna `true` nesta etapa. Não foi configurado Sanctum, login ou restrição por perfil; isso continua na etapa 8.
+- Criados `CategoryResource`, `PlatformResource`, `GenreResource` e `ProductResource` em `app/Http/Resources/`. Os quatro Controllers agora usam Requests específicos, `$request->validated()` e Resources nas respostas.
+- As respostas de sucesso agora têm `data`: listagens usam array e consultas/criações/atualizações usam objeto. Erros continuam com `message` e `errors`; DELETE continua 204 sem corpo. POST define 201 explicitamente.
+- Os Resources selecionam as colunas, formatam datas em ISO e usam `whenCounted()` e `whenLoaded()` para os dados já carregados pelo Service. Produtos não expõem `pivot`; preço permanece texto decimal e os casts de estoque e ativo são preservados.
+- Mantidas as transações de produtos e as regras de exclusão. Models, migrations e seeders não foram alterados nesta etapa.
+- Reativados os três testes de validação; ajustadas as asserções para `data` e acrescentados casos de atualização inválida, preservação de dados, omissão de `pivot` e prioridade do 404.
+- Verificado: **21 testes aprovados, 480 asserções e nenhum ignorado**, em SQLite em memória. Pint passou nos 21 arquivos PHP desta etapa. Não foram executados migrations ou seeders no MySQL.
+- Criado `docs/requests-resources.md` e atualizados os guias. Próximo passo: etapa 8, somente quando o usuário solicitar.
 
 ## Revisão da etapa 6 em 29/10/2026 — padrão solicitado pelo usuário
 
@@ -306,4 +322,4 @@ Forma curta de pedir novamente:
 
 ## Mensagem sugerida para retomar
 
-> Leia docs/gpt.md, docs/README.md, docs/data-model.md, docs/migrations.md, docs/seeders.md, docs/crud-catalog.md e docs/crud-products.md. As etapas 1 a 5 e os quatro CRUDs básicos do catálogo estão concluídos. Os fluxos de contas, endereços, carrinho e pedidos ainda estão pendentes. Explique em português, comente o código e respeite uma etapa por vez. Quero entender todas as requisições e respostas de pelo menos um exemplo, do início ao fim. Espere eu dizer “próximo” antes de outra etapa. Resources e FormRequests ficam para a etapa 7; Sanctum e permissões para a etapa 8.
+> Leia docs/gpt.md, docs/README.md, docs/data-model.md, docs/migrations.md, docs/seeders.md, docs/crud-catalog.md, docs/crud-products.md e docs/requests-resources.md. As etapas 1 a 5, os quatro CRUDs do catálogo e seus FormRequests e API Resources estão concluídos. As respostas de sucesso usam data. Os fluxos de contas, endereços, carrinho e pedidos ainda estão pendentes. Explique em português, comente o código e respeite uma etapa por vez. Espere eu dizer “próximo” antes de outra etapa. O próximo passo é a etapa 8, com Sanctum e permissões.

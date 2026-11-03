@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,5 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
-    })->create();
+    // Define quando os erros devem ser apresentados em JSON.
+    $exceptions->shouldRenderJsonWhen(
+        function (Request $request, \Throwable $exception): bool {
+            // Responde em JSON nas rotas da API ou quando o cliente solicitar.
+            return $request->is('api/*') || $request->expectsJson();
+        }
+    );
+})->create();

@@ -21,7 +21,7 @@ class GenreService
         return Genre::withCount('products')->findOrFail($id);
     }
 
-    // Cria o cadastro; a validação dos dados será feita na etapa de FormRequests.
+    // Cria o cadastro usando os campos validados pelo FormRequest.
     public function create(array $data): Genre
     {
         $genre = Genre::create($data);

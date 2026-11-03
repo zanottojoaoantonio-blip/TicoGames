@@ -33,14 +33,14 @@ class CatalogApiTest extends TestCase
 
             $this->getJson('/api/'.$resource)
                 ->assertOk()
-                ->assertJsonCount($model::count())
-                ->assertJsonStructure(['*' => ['id', 'name', 'products_count']]);
+                ->assertJsonCount($model::count(), 'data')
+                ->assertJsonStructure(['data' => ['*' => ['id', 'name', 'products_count', 'created_at', 'updated_at']]]);
 
             $this->getJson('/api/'.$resource.'/'.$record->id)
                 ->assertOk()
-                ->assertJsonPath('id', $record->id)
-                ->assertJsonPath('name', $record->name)
-                ->assertJsonPath('products_count', $record->products()->count());
+                ->assertJsonPath('data.id', $record->id)
+                ->assertJsonPath('data.name', $record->name)
+                ->assertJsonPath('data.products_count', $record->products()->count());
         }
     }
 
@@ -50,12 +50,12 @@ class CatalogApiTest extends TestCase
             // Um cadastro sem produtos pode completar o ciclo de criação até exclusão.
             $created = $this->postJson('/api/'.$resource, ['name' => 'Cadastro de Teste'])
                 ->assertCreated()
-                ->assertJsonPath('name', 'Cadastro de Teste')
-                ->assertJsonPath('products_count', 0);
-            $id = $created->json('id');
+                ->assertJsonPath('data.name', 'Cadastro de Teste')
+                ->assertJsonPath('data.products_count', 0);
+            $id = $created->json('data.id');
 
             $this->patchJson('/api/'.$resource.'/'.$id, ['name' => 'Cadastro Renomeado'])
-                ->assertOk()->assertJsonPath('name', 'Cadastro Renomeado');
+                ->assertOk()->assertJsonPath('data.name', 'Cadastro Renomeado');
 
             // PUT também é aceito; manter o próprio nome não viola a unicidade.
             $this->putJson('/api/'.$resource.'/'.$id, ['name' => 'Cadastro Renomeado'])
@@ -70,15 +70,12 @@ class CatalogApiTest extends TestCase
 
     public function test_names_must_be_present_valid_and_unique(): void
     {
-        // Retirar esta marcação quando os FormRequests forem implementados na etapa 7.
-        $this->markTestSkipped('Validação de entrada adiada para a etapa 7, a pedido do usuário.');
-
         foreach (self::RESOURCES as $resource => $model) {
             $record = $model::firstOrFail();
             $initialCount = $model::count();
 
             // Erros de entrada retornam 422 e não criam cadastros parciais.
-            foreach ([[], ['name' => ''], ['name' => ['invalid']], ['name' => str_repeat('a', 256)], ['name' => $record->name]] as $data) {
+            foreach ([[], ['name' => ''], ['name' => null], ['name' => 123], ['name' => ['invalid']], ['name' => str_repeat('a', 256)], ['name' => $record->name]] as $data) {
                 $this->postJson('/api/'.$resource, $data)
                     ->assertUnprocessable()->assertJsonValidationErrors('name');
             }
@@ -89,9 +86,6 @@ class CatalogApiTest extends TestCase
 
     public function test_updates_cannot_take_another_records_name(): void
     {
-        // Retirar esta marcação quando os FormRequests forem implementados na etapa 7.
-        $this->markTestSkipped('Validação de entrada adiada para a etapa 7, a pedido do usuário.');
-
         foreach (self::RESOURCES as $resource => $model) {
             $record = $model::firstOrFail();
             $other = $model::create(['name' => 'Nome Já Utilizado']);
@@ -100,8 +94,10 @@ class CatalogApiTest extends TestCase
                 ->assertUnprocessable()->assertJsonValidationErrors('name');
             $this->assertDatabaseHas($resource, ['id' => $record->id, 'name' => $record->name]);
 
-            $this->patchJson('/api/'.$resource.'/'.$record->id, ['name' => ''])
-                ->assertUnprocessable()->assertJsonValidationErrors('name');
+            foreach (['', null, 123, ['invalid'], str_repeat('a', 256)] as $name) {
+                $this->patchJson('/api/'.$resource.'/'.$record->id, ['name' => $name])
+                    ->assertUnprocessable()->assertJsonValidationErrors('name');
+            }
         }
     }
 
@@ -127,6 +123,7 @@ class CatalogApiTest extends TestCase
         foreach (self::RESOURCES as $resource => $model) {
             $this->getJson('/api/'.$resource.'/999999')->assertNotFound();
             $this->patchJson('/api/'.$resource.'/999999', ['name' => 'Teste'])->assertNotFound();
+            $this->patchJson('/api/'.$resource.'/999999', ['name' => ''])->assertNotFound();
             $this->deleteJson('/api/'.$resource.'/999999')->assertNotFound();
         }
     }

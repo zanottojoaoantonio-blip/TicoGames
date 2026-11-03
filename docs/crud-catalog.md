@@ -1,8 +1,8 @@
-# Etapa 6 — CRUDs básicos do catálogo
+# CRUDs do catálogo — etapas 6 e 7
 
-Em 28/10/2026, o usuário autorizou implementar os CRUDs do catálogo juntos e explicar um deles por completo depois. Foram concluídos **produtos, categorias, plataformas e gêneros**. Resources e FormRequests permanecem na etapa 7; autenticação e permissões, na etapa 8.
+Os CRUDs de **produtos, categorias, plataformas e gêneros** foram implementados na etapa 6. Em 03/11/2026, a etapa 7 acrescentou os FormRequests e API Resources. Autenticação e permissões continuam na etapa 8.
 
-Revisão de 29/10/2026: os Controllers seguem o exemplo fornecido pelo usuário, com IDs inteiros, variáveis antes das respostas e `$request->all()`. A validação de entrada foi retirada a pedido dele e será implementada nos FormRequests; nesta etapa, use corpos válidos. As restrições do banco continuam existindo, mas não substituem a validação HTTP.
+Os Controllers seguem o exemplo do usuário, com IDs inteiros e variáveis antes do retorno. Agora recebem FormRequests específicos e repassam `$request->validated()` ao Service. Os Resources organizam as respostas de sucesso com a chave externa `data`. Veja a explicação das classes em [requests-resources.md](requests-resources.md).
 
 ## Estrutura
 
@@ -25,13 +25,13 @@ Substitua `RESOURCE` por `products`, `categories`, `platforms` ou `genres`.
 
 | Método e caminho | Controller | Service | Resposta |
 | --- | --- | --- | --- |
-| GET `/api/RESOURCE` | `index()` | `listAll()` | 200 e uma lista JSON. |
-| GET `/api/RESOURCE/ID` | `show(int $id)` | `findById($id)` | 200 e um objeto; 404 se o ID não existir. |
-| POST `/api/RESOURCE` | `store()` | `create($request->all())` | 201 e o objeto criado para dados válidos. |
-| PATCH ou PUT `/api/RESOURCE/ID` | `update()` | `update($id, $request->all())` | 200 e o objeto atualizado; 404 se o ID não existir. |
+| GET `/api/RESOURCE` | `index()` | `listAll()` | 200 e uma lista em `data`. |
+| GET `/api/RESOURCE/ID` | `show(int $id)` | `findById($id)` | 200 e um objeto em `data`; 404 se o ID não existir. |
+| POST `/api/RESOURCE` | `store()` | `create($request->validated())` | 201 e o objeto criado em `data`; entrada inválida gera 422. |
+| PATCH ou PUT `/api/RESOURCE/ID` | `update()` | `update($id, $request->validated())` | 200 e o objeto atualizado em `data`; 404 ou 422 em caso de erro. |
 | DELETE `/api/RESOURCE/ID` | `destroy()` | `delete()` | 204 sem corpo; a regra de exclusão está abaixo. |
 
-As quatro chamadas `Route::apiResource()` em `routes/api.php` registram essas 20 rotas, com parâmetro `{id}`. O Controller passa o ID ao Service, que busca com `findOrFail()` e gera 404 quando não encontra. São rotas HTTP; as classes Resources para organizar o JSON serão estudadas na etapa 7.
+As quatro chamadas `Route::apiResource()` em `routes/api.php` registram essas 20 rotas, com parâmetro `{id}`. O Controller passa o ID ao Service, que busca com `findOrFail()` e gera 404 quando não encontra. Na atualização, o FormRequest também confirma a existência antes de validar os campos. `apiResource()` registra rotas; as classes em `app/Http/Resources` organizam o JSON.
 
 ## Categorias, plataformas e gêneros
 
@@ -43,7 +43,7 @@ Os três possuem o campo `name`. Para um POST em categorias, por exemplo:
 }
 ```
 
-O cadastro espera `name` como texto, até 255 caracteres e único na tabela. As regras de validação HTTP, incluindo a exceção do próprio registro na atualização, serão feitas nos FormRequests. Por enquanto, a coluna mantém a restrição de unicidade no banco; não espere resposta 422 de validação para um nome repetido.
+O FormRequest exige `name` preenchido, textual, até 255 caracteres e único na tabela. Na atualização, `sometimes` permite omitir o campo, e `ignore()` permite manter o nome do próprio registro. Nome vazio, inválido ou utilizado por outro registro gera 422.
 
 A resposta inclui `id`, `name`, `created_at`, `updated_at` e `products_count`. `withCount()` calcula a quantidade de produtos sem carregar os produtos inteiros na listagem e na busca por ID; `loadCount()` acrescenta a contagem depois de criar ou atualizar.
 
@@ -51,9 +51,11 @@ Exemplo resumido de resposta com status 201, omitindo as datas apenas nesta expl
 
 ```json
 {
-  "id": 4,
-  "name": "Lançamentos",
-  "products_count": 0
+  "data": {
+    "id": 4,
+    "name": "Lançamentos",
+    "products_count": 0
+  }
 }
 ```
 
@@ -96,15 +98,16 @@ O guia [crud-products.md](crud-products.md) contém os corpos de exemplo e o **p
 
 ## Verificações realizadas
 
-- [x] Pint passou nos 11 arquivos PHP da revisão: quatro Controllers, quatro Services, rotas e dois arquivos de testes.
-- [x] Suíte com **17 testes aprovados, 254 asserções e 3 testes de validação ignorados** em SQLite em memória.
+- [x] Pint passou nos 21 arquivos PHP da etapa 7: Requests, Resources, Controllers, comentários de Services e testes.
+- [x] Suíte com **21 testes aprovados e 480 asserções**, sem testes ignorados, em SQLite em memória.
 - [x] Os três cadastros foram testados em criação, listagem, consulta, atualização e exclusão.
-- [x] Renomeação com dados válidos verificada. Validação de nomes obrigatórios, tipos, tamanho e duplicação fica pendente para a etapa 7.
+- [x] Nomes obrigatórios, tipos, tamanho, duplicação e renomeação mantendo o próprio nome verificados.
+- [x] Respostas com `data` e relacionamentos de produtos sem `pivot` verificados.
 - [x] Exclusão de classificações utilizadas foi rejeitada, preservando os vínculos.
 - [x] IDs inexistentes retornaram 404; `route:list --path=api` mostrou as 20 rotas.
 - [x] Os cadastros e alterações dos testes ocorreram no SQLite em memória, sem gravar no MySQL.
 
-Os três testes de validação estão preservados com `markTestSkipped()`; remover essa marcação ao implementar os FormRequests. Antes desta revisão, havia validação inline e a suíte tinha 20 testes aprovados. Esse resultado anterior não descreve a validação disponível agora.
+Os três testes de validação antes ignorados foram reativados nesta etapa. As respostas 422 usam `message` e `errors`, sem a chave externa `data` dos Resources.
 
 Os testes estão em `tests/Feature/CatalogApiTest.php` e `tests/Feature/ProductApiTest.php`.
 
@@ -114,7 +117,7 @@ Os testes estão em `tests/Feature/CatalogApiTest.php` e `tests/Feature/ProductA
 - [ ] Executar GET nas quatro URLs base e conferir os dados.
 - [ ] Criar uma categoria, uma plataforma e um gênero de teste; guardar os IDs retornados.
 - [ ] Consultar os novos IDs e atualizar os nomes com PATCH.
-- [ ] Na etapa 7, reativar os testes de validação e conferir nomes vazios ou repetidos com resposta 422.
+- [ ] Conferir a chave `data` nos sucessos e nomes vazios ou repetidos com resposta 422.
 - [ ] Excluir os registros de teste sem produtos e conferir 204; consultar novamente e conferir 404.
 - [ ] Tentar excluir uma classificação utilizada e conferir 422, sem perda de dados.
 - [ ] Repetir o ciclo de produtos do outro guia, incluindo desativação e consulta posterior.

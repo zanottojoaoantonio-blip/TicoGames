@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
+use App\Http\Resources\ProductResource;
 use App\Services\ProductService;
-use Illuminate\Http\Request;
 
 // Recebe as requisições de produtos e delega as operações ao Service.
 class ProductController extends Controller
@@ -19,15 +21,16 @@ class ProductController extends Controller
     {
         $products = $this->productService->listAll();
 
-        return response()->json($products);
+        return ProductResource::collection($products);
     }
 
-    // POST /api/products: repassa os dados; a validação ficará nos FormRequests.
-    public function store(Request $request)
+    // POST /api/products: o FormRequest valida antes de executar esta ação.
+    public function store(StoreProductRequest $request)
     {
-        $product = $this->productService->create($request->all());
+        $product = $this->productService->create($request->validated());
 
-        return response()->json($product, 201);
+        // O Resource define os campos; 201 informa que um cadastro foi criado.
+        return (new ProductResource($product))->response()->setStatusCode(201);
     }
 
     // GET /api/products/{id}: o Service busca o registro ou gera o erro 404.
@@ -35,15 +38,15 @@ class ProductController extends Controller
     {
         $product = $this->productService->findById($id);
 
-        return response()->json($product);
+        return new ProductResource($product);
     }
 
-    // PUT ou PATCH /api/products/{id}: envia o ID e os dados ao Service.
-    public function update(Request $request, int $id)
+    // PUT ou PATCH /api/products/{id}: envia somente os campos validados ao Service.
+    public function update(UpdateProductRequest $request, int $id)
     {
-        $product = $this->productService->update($id, $request->all());
+        $product = $this->productService->update($id, $request->validated());
 
-        return response()->json($product);
+        return new ProductResource($product);
     }
 
     // DELETE /api/products/{id}: desativa o produto e responde sem corpo.

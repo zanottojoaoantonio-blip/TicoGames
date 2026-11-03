@@ -1,245 +1,128 @@
-# Etapa 6 — CRUD básico de produtos
+# CRUD de produtos — etapas 6 e 7
 
-Revisado em 29/10/2026 para seguir o Controller fornecido pelo usuário: namespace `Api`, IDs inteiros, variáveis antes das respostas e `$request->all()`. A validação de entrada foi retirada a pedido dele e ficará nos FormRequests da etapa 7. Os exemplos abaixo usam dados válidos; entrada inválida ainda não tem uma resposta 422 padronizada.
-
-Parte de produtos concluída em 28/10/2026. Depois, o usuário autorizou concluir os CRUDs do catálogo juntos e explicar um deles com todas as requisições e respostas. Categorias, plataformas e gêneros também estão implementados; veja [crud-catalog.md](crud-catalog.md). Resources e FormRequests ainda ficam para a etapa 7.
+Atualizado em 03/11/2026. O CRUD de produtos utiliza Controller, Service, FormRequests e API Resource. O Controller mantém o estilo solicitado: namespace `Api`, IDs inteiros e variáveis antes do retorno.
 
 ## Conceitos antes do código
 
-CRUD resume quatro operações: **Create** (criar), **Read** (consultar), **Update** (atualizar) e **Delete** (excluir). Na API de produtos, a consulta tem duas ações: listar todos e consultar um pelo ID.
+CRUD significa criar, consultar, atualizar e excluir. Neste projeto, consultar tem duas ações: listar todos e buscar por ID. Excluir um produto significa desativá-lo com `is_active = false`, preservando seu cadastro e seus vínculos.
 
-O caminho de uma chamada é: **Thunder Client → rota → Controller → Service → Model → MySQL**. A resposta volta em JSON, um formato de dados que o Vue também poderá consumir.
+| Parte | Responsabilidade |
+| --- | --- |
+| Rota | Associa método HTTP e URL à ação do Controller. |
+| FormRequest | Valida a entrada antes de executar a ação de cadastro ou atualização. |
+| Controller | Recebe o ID e os dados validados, chama o Service e retorna o Resource. |
+| Service | Consulta, grava, associa e desativa os produtos. |
+| Model | Usa o Eloquent para representar os registros e relacionamentos. |
+| Resource | Escolhe os campos apresentados na resposta JSON. |
 
-- **Rota:** associa um método e uma URL a uma ação do Controller.
-- **Controller:** recebe a requisição, passa os dados ao Service e devolve a resposta HTTP. A validação será acrescentada com FormRequests na etapa 7.
-- **Service:** executa as consultas e gravações do produto, incluindo seus relacionamentos.
-- **Model:** usa o Eloquent para trabalhar com as tabelas já criadas.
+O caminho de cadastro é: Thunder Client → rota → FormRequest → Controller → Service → Model/MySQL. Na volta, o Service entrega o Model ao Controller, que retorna um Resource para montar o JSON.
 
-Poderíamos colocar as consultas no Controller. Usamos um Service porque ele faz parte da etapa combinada e mantém a gravação das associações no mesmo lugar, permitindo reutilizar essa operação. Não criamos repositórios, classes base ou interfaces extras.
+Usamos Services para concentrar as operações e as associações em um lugar reutilizável. Cada entidade tem seu próprio Controller e Service; não foram criadas interfaces, repositórios ou classes base adicionais.
 
 ## Arquivos envolvidos
 
 | Arquivo | Responsabilidade |
 | --- | --- |
-| `bootstrap/app.php` | Carrega `routes/api.php`, com o prefixo `/api`. |
-| `routes/api.php` | Registra as cinco ações de cada cadastro por `Route::apiResources`. |
-| `app/Http/Controllers/Api/ProductController.php` | Recebe requisições, passa IDs e dados ao Service e monta respostas. |
-| `app/Services/ProductService.php` | Consulta, cria, atualiza e desativa produtos. |
-| `tests/Feature/ProductApiTest.php` | Testa o comportamento da API e uma falha durante a gravação. |
+| `public/index.php` | Carrega o Laravel e entrega a requisição à aplicação. |
+| `bootstrap/app.php` | Carrega a API com o prefixo `/api`. |
+| `routes/api.php` | Registra as cinco ações por `Route::apiResource()`, com `{id}`. |
+| `app/Http/Controllers/Api/ProductController.php` | Liga a entrada HTTP ao Service e ao Resource. |
+| `app/Http/Requests/StoreProductRequest.php` | Valida a criação. |
+| `app/Http/Requests/UpdateProductRequest.php` | Confirma o ID e valida a atualização. |
+| `app/Services/ProductService.php` | Executa as operações do produto. |
+| `app/Http/Resources/ProductResource.php` | Define as colunas e relacionamentos enviados em `data`. |
+| `tests/Feature/ProductApiTest.php` | Verifica o CRUD, a validação e o rollback da transação. |
 
-Não foi executado `install:api`, pois esse comando também instala Sanctum. A autenticação continua reservada à etapa 8. Por enquanto as rotas não exigem login nem perfil; são a API em desenvolvimento. Não há Resources ou FormRequests novos: eles pertencem à etapa 7.
-
-`Route::apiResource()` registra as rotas. Os Resources da etapa 7 serão classes para organizar os dados da resposta JSON; são recursos diferentes do framework, apesar dos nomes semelhantes.
+Autenticação e permissões permanecem na etapa 8. Os FormRequests retornam `true` em `authorize()` nesta etapa. O guia [requests-resources.md](requests-resources.md) explica as classes de entrada e saída.
 
 ## Como ler o Controller
 
-O construtor recebe `ProductService`. O Laravel cria essa dependência automaticamente. Não é necessário montar o Service com `new` em cada método nem registrar uma configuração adicional.
+O Laravel injeta `ProductService` pelo construtor. A propriedade `$this->productService` guarda esse objeto para ser usado nas ações.
 
-`index()` lista todos. `store()` cadastra. `show()` consulta um produto. `update()` altera os campos enviados. `destroy()` desativa o produto. Cada método guarda o resultado do Service em uma variável antes de montar a resposta.
+`index()` chama `listAll()`, `show(int $id)` chama `findById($id)`, `store()` chama `create()`, `update()` chama `update()` e `destroy()` chama `delete()`.
 
-Os métodos `show()`, `update()` e `destroy()` recebem `int $id`, correspondente a `{id}` na rota. O Controller passa esse ID ao Service, que encontra o registro com `findOrFail()`. Se ele não existir, o Laravel transforma a exceção em resposta 404. Não há route model binding implícito de `Product` nesta versão.
+Cadastro e atualização recebem Requests específicos. O Laravel valida a entrada antes de executar os respectivos métodos. Dentro deles, `$request->validated()` retorna os campos aprovados pelas regras.
 
-`$request->all()` devolve os dados de entrada recebidos; ele não os valida. O Controller repassa esse array ao Service. Os campos `$fillable` dos Models e as restrições do banco continuam existindo. A validação de campos obrigatórios, preços, estoque e associações ficará nos FormRequests.
+```php
+// O Request já foi validado quando o Laravel entra no método.
+public function store(StoreProductRequest $request)
+{
+    // Envia ao Service somente os campos validados.
+    $product = $this->productService->create($request->validated());
 
-Nesta primeira versão, PUT e PATCH aceitam atualização parcial: o Service altera os campos enviados e preserva os demais. As regras de validação de cadastro e edição serão implementadas nos FormRequests na etapa 7.
+    // Seleciona a saída e informa que o recurso foi criado.
+    return (new ProductResource($product))->response()->setStatusCode(201);
+}
+```
 
-## Como ler o Service
+`show()`, `update()` e `destroy()` recebem IDs inteiros. Os Services utilizam `findOrFail()` para localizar os registros. Na atualização, o FormRequest também faz essa busca antes da validação: um ID inexistente gera 404, mesmo com corpo inválido. Não há route model binding implícito de `Product` neste padrão.
 
-- `listAll()` consulta os cadastros ordenados pelo ID e carrega plataforma, categorias e gêneros com `with()`.
-- `findById(int $id)` busca o produto com `findOrFail()` e carrega os relacionamentos com `with()`.
-- `create()` separa `category_ids` e `genre_ids`, salva o produto e grava as tabelas de ligação.
-- `update(int $id, array $data)` localiza o produto e muda somente os dados enviados. Uma lista de associações enviada substitui a lista anterior; uma lista omitida é preservada.
-- `delete(int $id)` localiza o produto e define `is_active` como falso, mantendo a linha no banco.
+## Entrada: regras dos FormRequests
 
-`DB::transaction()` mantém a gravação do produto e dos vínculos na mesma operação. Se uma associação falhar, a criação ou atualização não deve ficar pela metade.
+No cadastro, são obrigatórios nome, descrição, caminho da imagem, plataforma, preço, estoque e uma lista de categorias com pelo menos um ID. A plataforma e os IDs das listas precisam existir. IDs repetidos são rejeitados.
 
-No CRUD usamos `sync()` porque a lista enviada pelo administrador representa as associações desejadas naquele momento. Isso difere do `syncWithoutDetaching()` dos seeders, que apenas acrescenta os vínculos iniciais sem apagar associações existentes.
+O preço deve ser não negativo, ter até duas casas decimais e caber em `decimal(10,2)`. O estoque deve ser inteiro entre zero e `4294967295`. `is_active` é opcional no cadastro e recebe o padrão verdadeiro do banco quando omitido.
 
-Após criar ou atualizar, o Service chama `findById()` para reler o cadastro com seus relacionamentos, incluindo padrões como `is_active = true`. Assim, a resposta do cadastro também contém esse valor quando o cliente não o enviou.
+Gêneros são opcionais: consoles podem não ter nenhum. O preço deve usar ponto decimal. A imagem é um caminho de arquivo; este CRUD não implementa upload.
 
-## Comportamento da desativação
+PUT e PATCH aceitam atualização parcial. `sometimes` permite omitir campos; `required` impede enviar vazios aqueles que precisam de valor. Listas enviadas substituem as associações atuais. Omitir a lista mantém seus vínculos; `genre_ids: []` remove os gêneros. Categorias vazias são rejeitadas.
 
-Excluir fisicamente com `delete()` apagaria o registro e poderia afetar referências em carrinhos e pedidos. A modelagem já previa retirar produtos de oferta com `is_active`, então usamos essa coluna, sem acrescentar `deleted_at` ou novas migrations.
+Uma falha de validação retorna 422 antes da ação e da gravação. Os campos `$fillable` do Model e as restrições do banco continuam existindo.
 
-Esta API básica lista **ativos e inativos** para conferir os cadastros administrativos. Depois de um DELETE, consultar o mesmo ID ainda responde 200, com `is_active: false`. É possível reativá-lo enviando `is_active: true` no PATCH. A listagem pública do catálogo e suas permissões serão tratadas nas etapas correspondentes.
+## Operações do Service
+
+- `listAll()` ordena os produtos pelo ID e carrega plataforma, categorias e gêneros com `with()`.
+- `findById(int $id)` usa `findOrFail()` com os relacionamentos; se não encontrar, gera a exceção que o Laravel apresenta como 404.
+- `create(array $data)` separa `category_ids` e `genre_ids`, grava as colunas do produto e associa os IDs.
+- `update(int $id, array $data)` encontra o produto, altera os campos e substitui apenas as listas enviadas.
+- `delete(int $id)` encontra o produto e grava `is_active = false`.
+
+`DB::transaction()` mantém a gravação do produto e dos vínculos na mesma operação. Se uma associação falhar, todas as gravações daquela operação são desfeitas.
+
+`sync()` grava exatamente as associações enviadas no CRUD. Nos seeders usamos `syncWithoutDetaching()`, que acrescenta vínculos sem remover os existentes.
+
+Depois de criar ou atualizar, o Service chama `findById()` para reler as colunas e os relacionamentos, incluindo padrões definidos pelo banco.
+
+## Saída: ProductResource
+
+As respostas de sucesso possuem a chave externa `data`. Na listagem ela contém um array; na consulta, criação e atualização contém um objeto. Os Resources relacionados não criam novas camadas `data` dentro dos relacionamentos.
+
+O Resource apresenta ID, plataforma, nome, descrição, preço, imagem, estoque, ativo, datas e os relacionamentos carregados. As tabelas intermediárias não aparecem como `pivot`.
+
+`whenLoaded()` utiliza os relacionamentos carregados pelo Service. Preço permanece texto decimal com duas casas, estoque é inteiro e ativo é booleano, seguindo os casts do Model.
 
 ## Testar no Thunder Client
 
-Com os serviços ativos, crie as requisições abaixo. Configure os headers:
+Use `http://localhost:8000`, sem `www`. Configure `Accept: application/json` e, ao enviar corpo JSON, `Content-Type: application/json`. Os erros usam `message` e `errors`; não recebem a chave externa `data`.
 
-| Header | Valor | Para que serve |
+| Método e caminho | Ação | Sucesso |
 | --- | --- | --- |
-| `Accept` | `application/json` | Solicita respostas e erros em JSON. |
-| `Content-Type` | `application/json` | Informa o formato do corpo de POST, PUT e PATCH. |
+| GET `/api/products` | Listar | 200 com `data` como array. |
+| GET `/api/products/ID` | Consultar | 200 com `data` como objeto. |
+| POST `/api/products` | Criar | 201 com o objeto em `data`. |
+| PATCH ou PUT `/api/products/ID` | Atualizar | 200 com o objeto em `data`. |
+| DELETE `/api/products/ID` | Desativar | 204 sem corpo. |
 
-Use a aba **Body → JSON** para enviar os corpos. Não é necessário token nesta etapa.
+### 1. Listagem
 
-| Método | URL | Ação | Status esperado |
-| --- | --- | --- | --- |
-| GET | `http://localhost:8000/api/products` | Listar cadastros. | 200 |
-| GET | `http://localhost:8000/api/products/1` | Consultar o ID 1. | 200, se existir. |
-| POST | `http://localhost:8000/api/products` | Cadastrar. | 201 |
-| PATCH ou PUT | `http://localhost:8000/api/products/ID` | Atualizar o ID informado. | 200 |
-| DELETE | `http://localhost:8000/api/products/ID` | Desativar. | 204, sem corpo. |
+Envie GET para `/api/products`. O Laravel encontra `index()`, o Controller chama `listAll()` do Service e o Eloquent consulta os produtos e seus relacionamentos. A coleção volta ao Controller, que retorna `ProductResource::collection($products)`.
 
-### 1. Listar e identificar os IDs
-
-Comece pelo GET de listagem. Na última verificação havia 7 produtos. A resposta é uma lista JSON, sem um campo externo `data`. Cada produto inclui `platform`, `categories` e `genres`, com seus IDs. Copie os IDs existentes para testar a criação.
-
-Os Models ainda são devolvidos diretamente em JSON, incluindo datas e dados de ligação `pivot`. A organização da resposta em Resources virá na etapa 7. Não há paginação ou filtros nesta parte inicial.
-
-### 2. Cadastrar um produto
-
-Os IDs abaixo são exemplos; confira os existentes no GET. O preço usa ponto decimal, e a imagem é o caminho da ilustração já presente no projeto, sem upload de arquivo.
+Resposta resumida: apenas dois produtos e alguns campos; a resposta real tem datas, outros campos e relacionamentos.
 
 ```json
 {
-  "name": "Jogo de Teste",
-  "description": "Jogo físico para testar o cadastro pelo Thunder Client.",
-  "platform_id": 1,
-  "price": "199.90",
-  "image_path": "images/product-placeholder.svg",
-  "stock": 5,
-  "category_ids": [1, 3],
-  "genre_ids": [1, 3]
+  "data": [
+    {"id": 1, "name": "Elden Ring", "price": "299.90", "stock": 8},
+    {"id": 2, "name": "Elden Ring", "price": "279.90", "stock": 6}
+  ]
 }
 ```
 
-`platform_id` é a única plataforma do produto. `category_ids` deve ter pelo menos uma categoria. `genre_ids` é opcional e pode ser `[]`. Se `is_active` não for enviado, o banco utiliza verdadeiro.
+Esta listagem administrativa inicial inclui ativos e inativos. Não há paginação ou filtros nesta etapa.
 
-Guarde o `id` retornado com status 201 e use-o nas próximas requisições. Um POST sempre cria um novo cadastro; não tem a busca prévia por nome que usamos nos seeders. Repetir o mesmo POST pode criar outro produto com o mesmo nome e plataforma.
+### 2. Cadastro
 
-### 3. Consultar e atualizar o produto criado
-
-Faça GET para `/api/products/ID`, substituindo ID pelo valor retornado no POST.
-
-Depois envie um PATCH para a mesma URL:
-
-```json
-{
-  "price": "179.90",
-  "stock": 3
-}
-```
-
-Somente preço e estoque mudam. Nome, plataforma, categorias e gêneros permanecem.
-
-Para alterar associações, envie as listas completas desejadas. `"genre_ids": []` retira todos os gêneros; omitir esse campo os mantém. Pela regra de negócio, cada produto precisa de pelo menos uma categoria; a rejeição de `"category_ids": []` será implementada nos FormRequests da etapa 7.
-
-### 4. Desativar e conferir
-
-Envie DELETE para o ID de teste. A resposta 204 é vazia, o que significa sucesso. Consulte o mesmo ID com GET e confira `is_active: false`.
-
-O produto permanece salvo e aparece nesta listagem administrativa inicial. Se quiser reativá-lo, envie PATCH com `{"is_active": true}`.
-
-### 5. Conferir os erros disponíveis e os pendentes
-
-- GET, PATCH ou DELETE para `/api/products/999999`, caso o ID não exista: 404, gerado pela busca no Service.
-- Campos ausentes, preço e estoque inválidos, associações inexistentes, lista de categorias vazia e IDs repetidos: validação HTTP pendente para a etapa 7.
-- As restrições do banco continuam ativas. Elas podem rejeitar uma gravação inválida, mas isso não equivale a devolver erros de campos com status 422.
-
-## Percurso completo: onde cada requisição começa e termina
-
-### Entrada e saída comuns
-
-1. Você escolhe método, URL, headers e, quando necessário, um corpo em **Body → JSON** no Thunder Client.
-2. Ao clicar em Send, a requisição chega à porta 8000 do computador, publicada pelo Docker para o servidor PHP do contêiner.
-3. `public/index.php` carrega o autoload do Composer e `bootstrap/app.php`, captura a requisição e a entrega ao Laravel.
-4. O Laravel passa a requisição pelos middlewares aplicáveis e encontra a ação registrada em `routes/api.php` pelo método e pela URL. Essas rotas recebem o prefixo `/api`.
-5. O Controller recebe a requisição e, nos caminhos individuais, o parâmetro `int $id`.
-6. Em cadastro ou atualização, o Controller repassa `$request->all()` ao Service, sem validação de entrada nesta etapa.
-7. O Service busca o registro com `findOrFail()` quando há ID; se não existir, o fluxo para com 404. Nas demais operações, utiliza o Model e seus relacionamentos; o Eloquent monta as consultas SQL para o MySQL.
-8. O banco devolve os resultados. O Eloquent os representa como Models ou Collection. Os casts do `Product` apresentam preço como texto decimal, estoque como inteiro e ativo como booleano.
-9. O Service retorna ao Controller. `response()->json(...)` serializa os dados em JSON e define o status. Para DELETE, `noContent()` envia 204 sem JSON.
-10. A resposta HTTP volta pela porta publicada e é exibida na aba Response do Thunder Client. O ciclo terminou; uma nova consulta será uma nova requisição.
-
-```mermaid
-sequenceDiagram
-    participant T as Thunder Client
-    participant L as Laravel e rotas
-    participant C as ProductController
-    participant S as ProductService
-    participant M as Product / Eloquent
-    participant D as MySQL
-    T->>L: Método, URL, headers e corpo
-    L->>C: Ação correspondente
-    C->>S: Chamada com ID e/ou dados recebidos
-    S->>M: Consulta ou gravação
-    M->>D: SQL
-    D-->>M: Dados ou confirmação
-    M-->>S: Model ou Collection
-    S-->>C: Resultado
-    C-->>T: Status HTTP e JSON, ou 204 vazio
-```
-
-O diagrama representa o caminho de sucesso. Um ID inexistente interrompe o caminho na busca feita pelo Service. Uma falha durante a gravação das associações provoca rollback da transação. A validação de entrada será estudada na próxima etapa.
-
-### GET de listagem
-
-Requisição, sem corpo:
-
-```http
-GET http://localhost:8000/api/products
-Accept: application/json
-```
-
-`routes/api.php` seleciona `index()` do `ProductController`, no namespace `Api`. Ele chama `listAll()` do Service. O Service executa `Product::with(['platform', 'categories', 'genres'])->orderBy('id')->get()`.
-
-O Eloquent consulta os produtos e carrega os relacionamentos usando `platform_id`, `category_product` e `genre_product`. A Collection volta ao Controller, que responde **200 OK**, com uma lista JSON.
-
-Trecho reduzido da lista, mostrando alguns campos de dois produtos; a resposta real inclui todos os produtos e seus outros campos:
-
-```json
-[
-  {"id": 1, "name": "Elden Ring", "price": "299.90", "stock": 8},
-  {"id": 2, "name": "Elden Ring", "price": "279.90", "stock": 6}
-]
-```
-
-Não há alteração no banco. Esta listagem administrativa inicial também inclui produtos desativados.
-
-### GET de um produto
-
-Requisição, sem corpo:
-
-```http
-GET http://localhost:8000/api/products/1
-Accept: application/json
-```
-
-O parâmetro `{id}` recebe 1. O Controller executa `show(int $id)` e chama `findById($id)` do Service. O Service busca o produto com `findOrFail()` e carrega plataforma, categorias e gêneros com `with()`.
-
-O Controller responde **200 OK**, com um objeto JSON. Para ver o que a resposta contém, este exemplo mantém os campos do produto e resume os campos internos dos relacionamentos; a API também envia datas e informações `pivot` das associações:
-
-```json
-{
-  "id": 1,
-  "platform_id": 1,
-  "name": "Elden Ring",
-  "description": "Jogo físico de ação e RPG para PlayStation 5.",
-  "price": "299.90",
-  "image_path": "images/product-placeholder.svg",
-  "stock": 8,
-  "is_active": true,
-  "platform": {"id": 1, "name": "PlayStation 5"},
-  "categories": [{"id": 1, "name": "Jogos"}, {"id": 3, "name": "Destaques"}],
-  "genres": [{"id": 1, "name": "Ação"}, {"id": 3, "name": "RPG"}]
-}
-```
-
-Se o ID não existir, a resposta é **404 Not Found**, em vez de um produto. Com `Accept: application/json`, o erro vem em JSON com `message`; o texto e os detalhes de debug podem variar conforme a configuração local. O Service não executa a consulta de relacionamentos nesse caso.
-
-### POST de cadastro
-
-Método e endereço:
-
-```http
-POST http://localhost:8000/api/products
-Accept: application/json
-Content-Type: application/json
-```
-
-Corpo em Body → JSON:
+Confira os IDs de plataformas e categorias existentes. Envie POST para `/api/products`, em Body → JSON:
 
 ```json
 {
@@ -254,114 +137,109 @@ Corpo em Body → JSON:
 }
 ```
 
-A rota seleciona `store()` do Controller. Ele chama `create($request->all())` do Service com os dados recebidos. A validação da plataforma e das categorias ficará para os FormRequests.
+O Laravel resolve `StoreProductRequest`. Se os dados forem válidos, executa `store()`, que chama `create()` do Service com `validated()`. O Service grava o produto e os vínculos em uma transação e relê o resultado. O Controller retorna o Resource com status 201.
 
-O Service abre a transação, separa as duas listas de IDs, salva as colunas em `products`, grava os vínculos em `category_product` e `genre_product` e lê o produto com os relacionamentos. Se tudo der certo, a transação é confirmada. Se uma gravação falhar, ela é desfeita junto com as outras dessa operação.
-
-O Controller responde **201 Created** com o objeto criado. Exemplo resumido, usando ID 8 apenas como ilustração:
+Resposta resumida, com ID 8 apenas ilustrativo; foram omitidos descrição, imagem, datas e parte dos campos dos relacionamentos:
 
 ```json
 {
-  "id": 8,
-  "name": "Jogo de Teste",
-  "platform_id": 1,
-  "price": "199.90",
-  "stock": 5,
-  "is_active": true,
-  "categories": [{"id": 1, "name": "Jogos"}],
-  "genres": []
+  "data": {
+    "id": 8,
+    "name": "Jogo de Teste",
+    "platform_id": 1,
+    "price": "199.90",
+    "stock": 5,
+    "is_active": true,
+    "platform": {"id": 1, "name": "PlayStation 5"},
+    "categories": [{"id": 1, "name": "Jogos"}],
+    "genres": []
+  }
 }
 ```
 
-A resposta real também inclui descrição, caminho da imagem, datas, plataforma e campos das associações. O ID é gerado pelo banco. Guarde o valor recebido e use-o nas próximas chamadas; ele não é garantidamente 8.
+Guarde o valor de `data.id` realmente devolvido. O banco gera o ID; ele não é garantidamente 8. Um POST cria outro produto, sem a busca prévia por nome dos seeders.
 
-### PATCH ou PUT de atualização
+### 3. Consulta por ID
 
-Método e endereço, substituindo 8 pelo ID criado:
+Envie GET para `/api/products/ID`, substituindo ID pelo valor salvo. A rota chama `show(int $id)`, que pede `findById($id)` ao Service. A busca carrega os relacionamentos e devolve o Model; o Controller retorna `new ProductResource($product)` com status 200.
 
-```http
-PATCH http://localhost:8000/api/products/8
-Accept: application/json
-Content-Type: application/json
+O formato é o mesmo objeto em `data` mostrado acima. Se o ID não existir, `findOrFail()` interrompe a busca e o Laravel devolve 404.
+
+### 4. Atualização
+
+Envie PATCH para `/api/products/ID` com:
+
+```json
+{"price": "179.90", "stock": 3}
 ```
 
-Corpo:
+O Laravel resolve `UpdateProductRequest`, que encontra o ID e valida os campos. O Controller recebe o ID e chama `update($id, $request->validated())` do Service.
+
+O Service altera preço e estoque dentro da transação e mantém categorias e gêneros, pois as listas não foram enviadas. Ele relê o cadastro e o Controller o apresenta pelo Resource com status 200.
+
+Trecho resumido; os demais campos e relacionamentos também são enviados:
 
 ```json
 {
-  "price": "179.90",
-  "stock": 3
+  "data": {"id": 8, "name": "Jogo de Teste", "price": "179.90", "stock": 3, "is_active": true}
 }
 ```
 
-A rota chama `update(Request $request, int $id)` do Controller, que repassa `$id` e `$request->all()` ao Service. O Service encontra o produto com `findOrFail()`; um ID inexistente gera 404.
+Atualizar estoque no cadastro não cria compra ou pagamento. O fluxo de pedidos ainda será implementado.
 
-O Service abre uma transação e executa a atualização. Como nenhuma lista foi enviada, categorias e gêneros são preservados. Se `category_ids` ou `genre_ids` forem enviados, `sync()` passa a usar exatamente a lista correspondente. Depois o Service recarrega o registro e o devolve ao Controller.
+### 5. Desativação e reativação
 
-A resposta é **200 OK**, com o objeto atualizado. Trecho resumido:
+Envie DELETE para `/api/products/ID`. O Controller chama `delete($id)` do Service, que encontra o produto e grava `is_active = false`. O Controller devolve **204 sem corpo**; não existe JSON nessa resposta.
+
+Consulte o mesmo ID com GET. Ele continua respondendo 200 com o objeto em `data`, agora com `is_active: false`. Os vínculos permanecem no banco. Para reativar, envie PATCH com `{"is_active": true}`.
+
+### 6. Erros
+
+- ID inexistente em GET, PATCH, PUT ou DELETE: 404.
+- POST sem os campos obrigatórios: 422.
+- Preço negativo, mais de duas casas ou maior que `99999999.99`: 422.
+- Estoque negativo, fracionário ou maior que `4294967295`: 422.
+- Plataforma ou IDs das listas inexistentes, categorias vazias e IDs repetidos: 422.
+
+Exemplo de erro de estoque, com texto ilustrativo conforme o idioma instalado no Laravel:
 
 ```json
 {
-  "id": 8,
-  "name": "Jogo de Teste",
-  "price": "179.90",
-  "stock": 3,
-  "is_active": true
+  "message": "The stock field must be at least 0.",
+  "errors": {"stock": ["The stock field must be at least 0."]}
 }
 ```
 
-Os demais campos e relacionamentos também vêm na resposta. Nesta implementação inicial, PUT e PATCH apontam para a mesma ação e aceitam campos parciais. Atualizar o estoque no cadastro é diferente do fluxo de pagamento: nenhuma compra é criada por essa chamada.
+Os erros não têm a chave externa `data`. O header `Accept` solicita JSON; as mensagens padrão podem aparecer em inglês.
 
-### DELETE de desativação
+## Onde o percurso para
 
-Requisição, sem corpo:
+- Hostname inválido ou servidor parado: a chamada pode falhar no cliente, sem uma resposta da aplicação.
+- ID inexistente: a busca com `findOrFail()` gera 404. Na atualização isso ocorre no FormRequest antes da validação; em consulta e exclusão, no Service.
+- Dados inválidos: o FormRequest gera 422 antes de executar a ação do Controller.
+- Classificação utilizada: nos outros três CRUDs, a regra do Service bloqueia a exclusão com 422.
+- Falha na gravação de associações: a transação desfaz as gravações daquela operação.
 
-```http
-DELETE http://localhost:8000/api/products/8
-Accept: application/json
-```
+## Verificações executadas
 
-A rota chama `destroy(int $id)` do Controller, que chama `delete($id)` do Service. O Service encontra o produto com `findOrFail()` e grava `is_active = false`; não executa uma exclusão física.
+- [x] Pint passou nos 21 arquivos PHP da etapa 7.
+- [x] Suíte com **21 testes aprovados e 480 asserções**, sem testes ignorados, em SQLite em memória.
+- [x] Listagem, consulta, criação com e sem gêneros, atualização parcial e substituição de associações.
+- [x] Desativação, reativação e preservação de vínculos.
+- [x] Validação de criação e atualização; entradas inválidas preservam os dados.
+- [x] Respostas com `data`, tipos preservados e relacionamentos sem `pivot`.
+- [x] IDs inexistentes respondem 404, mesmo com corpo de atualização inválido.
+- [x] Falha de chave estrangeira diretamente no Service provoca rollback de toda a criação.
 
-O Controller responde **204 No Content**. A área de resposta vazia é o resultado esperado: não existe JSON nessa resposta.
+As gravações da suíte ocorreram no SQLite em memória, sem alterar o MySQL. Os IDs e valores dos exemplos são ilustrativos; o roteiro manual fica para o estudante repetir.
 
-Um novo GET para o mesmo ID responde 200. Trecho resumido:
+## Checklist manual
 
-```json
-{
-  "id": 8,
-  "name": "Jogo de Teste",
-  "price": "179.90",
-  "stock": 3,
-  "is_active": false
-}
-```
+- [ ] Listar os produtos e identificar os IDs das associações existentes.
+- [ ] Criar um produto e guardar `data.id`.
+- [ ] Consultar esse ID e conferir relacionamentos sem `pivot`.
+- [ ] Atualizar apenas preço e estoque e conferir que as listas foram preservadas.
+- [ ] Enviar uma atualização inválida e receber 422 sem alterações.
+- [ ] Desativar, consultar o mesmo ID e depois reativar.
 
-Esse GET é outra chamada e demonstra que a linha continua no banco. Para reativar, faça PATCH com `{"is_active": true}`. Um DELETE de ID inexistente retorna 404.
-
-### Onde o caminho para quando há erro
-
-- **Hostname inválido:** com `www.localhost`, o erro de resolução pode acontecer no Thunder Client antes de alcançar o Laravel. Use `localhost` ou `127.0.0.1`.
-- **Servidor inacessível:** se o Docker ou PHP estiver parado, o cliente não consegue obter uma resposta HTTP da aplicação.
-- **ID inexistente:** o Service chama `findOrFail()` e o Laravel converte a exceção em 404, antes de atualizar ou excluir o registro.
-- **Entrada inválida:** ainda não há validação HTTP de campos. Os FormRequests da etapa 7 passarão a devolver 422 para esses casos. Nesta fase, a entrada pode ser aceita ou provocar erro do banco.
-- **Regra de exclusão de classificação:** nos outros três CRUDs, o Service pode retornar um erro de validação por existir produto associado. O Laravel o apresenta em JSON com status 422.
-- **Falha durante a transação de produtos:** os dados da operação são desfeitos; não fica um produto parcialmente cadastrado. O teste provoca uma falha de chave estrangeira diretamente no Service para verificar essa garantia.
-
-O formato de erro por campo, como `errors.stock`, será definido pela validação dos FormRequests na etapa 7. A regra de exclusão das classificações continua devolvendo 422 conforme o exemplo em `crud-catalog.md`.
-
-## Verificação executada
-
-- [x] Pint passou nos 11 arquivos PHP da revisão, incluindo Controllers, Services, rotas e testes.
-- [x] Suíte atual com **17 testes aprovados, 254 asserções e 3 testes de validação ignorados**, em SQLite em memória.
-- [x] Listagem, consulta, criação, criação sem gênero, atualização parcial e substituição de associações verificadas.
-- [x] Desativação, reativação e preservação de vínculos verificadas.
-- [x] IDs inexistentes verificados, com busca nos Services e resposta 404.
-- [ ] Reativar os três testes de validação ao implementar os FormRequests na etapa 7.
-- [x] Falha de chave estrangeira no Service desfez toda a criação, inclusive as associações já gravadas.
-- [x] `route:list --path=api` mostrou as cinco rotas de produtos.
-- [x] As gravações da suíte ocorreram somente no SQLite em memória, sem alterar os cadastros do MySQL.
-
-O roteiro manual do Thunder Client acima fica para o estudante repetir. Antes da retirada da validação inline, a suíte tinha 20 testes aprovados e 336 asserções; esse resultado anterior não descreve a validação disponível agora. O resultado atual está em `docs/crud-catalog.md`.
-
-Referências: [rotas no Laravel 12](https://laravel.com/docs/12.x/routing), [Controllers e apiResource](https://laravel.com/docs/12.x/controllers) e [validação](https://laravel.com/docs/12.x/validation).
+Referências: [FormRequests](https://laravel.com/docs/12.x/validation#form-request-validation) e [API Resources](https://laravel.com/docs/12.x/eloquent-resources).
