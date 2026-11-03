@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePlatformRequest;
+use App\Http\Requests\UpdatePlatformRequest;
+use App\Http\Resources\PlatformResource;
 use App\Services\PlatformService;
-use Illuminate\Http\Request;
 
 // Recebe as requisições de plataformas e delega as operações ao Service.
 class PlatformController extends Controller
@@ -19,15 +21,15 @@ class PlatformController extends Controller
     {
         $platforms = $this->platformService->listAll();
 
-        return response()->json($platforms);
+        return PlatformResource::collection($platforms);
     }
 
-    // POST /api/platforms: repassa os dados; a validação ficará nos FormRequests.
-    public function store(Request $request)
+    // POST /api/platforms: envia somente os dados validados ao Service.
+    public function store(StorePlatformRequest $request)
     {
-        $platform = $this->platformService->create($request->all());
+        $platform = $this->platformService->create($request->validated());
 
-        return response()->json($platform, 201);
+        return (new PlatformResource($platform))->response()->setStatusCode(201);
     }
 
     // GET /api/platforms/{id}: o Service busca o registro ou gera o erro 404.
@@ -35,15 +37,15 @@ class PlatformController extends Controller
     {
         $platform = $this->platformService->findById($id);
 
-        return response()->json($platform);
+        return new PlatformResource($platform);
     }
 
     // PUT ou PATCH /api/platforms/{id}: envia o ID e os dados ao Service.
-    public function update(Request $request, int $id)
+    public function update(UpdatePlatformRequest $request, int $id)
     {
-        $platform = $this->platformService->update($id, $request->all());
+        $platform = $this->platformService->update($id, $request->validated());
 
-        return response()->json($platform);
+        return new PlatformResource($platform);
     }
 
     // DELETE /api/platforms/{id}: exclui se não houver produtos associados e responde sem corpo.

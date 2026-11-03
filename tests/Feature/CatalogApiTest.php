@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Genre;
 use App\Models\Platform;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,7 +24,8 @@ class CatalogApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(); // Utiliza os exemplos reais, sem factories.
+        $this->seed();
+        $this->actingAs(User::where('role', 'admin')->firstOrFail()); // Utiliza os exemplos reais, sem factories.
     }
 
     public function test_catalog_lists_and_details_include_product_counts(): void
@@ -33,14 +35,14 @@ class CatalogApiTest extends TestCase
 
             $this->getJson('/api/'.$resource)
                 ->assertOk()
-                ->assertJsonCount($model::count())
-                ->assertJsonStructure(['*' => ['id', 'name', 'products_count']]);
+                ->assertJsonCount($model::count(), 'data')
+                ->assertJsonStructure(['data' => ['*' => ['id', 'name', 'products_count']]]);
 
             $this->getJson('/api/'.$resource.'/'.$record->id)
                 ->assertOk()
-                ->assertJsonPath('id', $record->id)
-                ->assertJsonPath('name', $record->name)
-                ->assertJsonPath('products_count', $record->products()->count());
+                ->assertJsonPath('data.id', $record->id)
+                ->assertJsonPath('data.name', $record->name)
+                ->assertJsonPath('data.products_count', $record->products()->count());
         }
     }
 
@@ -50,12 +52,12 @@ class CatalogApiTest extends TestCase
             // Um cadastro sem produtos pode completar o ciclo de criação até exclusão.
             $created = $this->postJson('/api/'.$resource, ['name' => 'Cadastro de Teste'])
                 ->assertCreated()
-                ->assertJsonPath('name', 'Cadastro de Teste')
-                ->assertJsonPath('products_count', 0);
-            $id = $created->json('id');
+                ->assertJsonPath('data.name', 'Cadastro de Teste')
+                ->assertJsonPath('data.products_count', 0);
+            $id = $created->json('data.id');
 
             $this->patchJson('/api/'.$resource.'/'.$id, ['name' => 'Cadastro Renomeado'])
-                ->assertOk()->assertJsonPath('name', 'Cadastro Renomeado');
+                ->assertOk()->assertJsonPath('data.name', 'Cadastro Renomeado');
 
             // PUT também é aceito; manter o próprio nome não viola a unicidade.
             $this->putJson('/api/'.$resource.'/'.$id, ['name' => 'Cadastro Renomeado'])
@@ -70,9 +72,6 @@ class CatalogApiTest extends TestCase
 
     public function test_names_must_be_present_valid_and_unique(): void
     {
-        // Retirar esta marcação quando os FormRequests forem implementados na etapa 7.
-        $this->markTestSkipped('Validação de entrada adiada para a etapa 7, a pedido do usuário.');
-
         foreach (self::RESOURCES as $resource => $model) {
             $record = $model::firstOrFail();
             $initialCount = $model::count();
@@ -89,9 +88,6 @@ class CatalogApiTest extends TestCase
 
     public function test_updates_cannot_take_another_records_name(): void
     {
-        // Retirar esta marcação quando os FormRequests forem implementados na etapa 7.
-        $this->markTestSkipped('Validação de entrada adiada para a etapa 7, a pedido do usuário.');
-
         foreach (self::RESOURCES as $resource => $model) {
             $record = $model::firstOrFail();
             $other = $model::create(['name' => 'Nome Já Utilizado']);

@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Genre;
 use App\Models\Platform;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\ProductService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,15 +23,16 @@ class ProductApiTest extends TestCase
 
         // Reutiliza os dados de demonstração; não utiliza factories.
         $this->seed();
+        $this->actingAs(User::where('role', 'admin')->firstOrFail());
     }
 
     public function test_products_can_be_listed_with_their_relationships(): void
     {
         $this->getJson('/api/products')
             ->assertOk()
-            ->assertJsonCount(7)
+            ->assertJsonCount(7, 'data')
             ->assertJsonStructure([
-                '*' => ['id', 'name', 'price', 'stock', 'is_active', 'platform', 'categories', 'genres'],
+                'data' => ['*' => ['id', 'name', 'price', 'stock', 'is_active', 'platform', 'categories', 'genres']],
             ]);
     }
 
@@ -40,10 +42,10 @@ class ProductApiTest extends TestCase
 
         $this->getJson('/api/products/'.$product->id)
             ->assertOk()
-            ->assertJsonPath('id', $product->id)
-            ->assertJsonPath('price', $product->price)
-            ->assertJsonPath('platform.id', $product->platform_id)
-            ->assertJsonCount(2, 'genres');
+            ->assertJsonPath('data.id', $product->id)
+            ->assertJsonPath('data.price', $product->price)
+            ->assertJsonPath('data.platform.id', $product->platform_id)
+            ->assertJsonCount(2, 'data.genres');
     }
 
     public function test_a_product_can_be_created_with_categories_and_genres(): void
@@ -53,12 +55,12 @@ class ProductApiTest extends TestCase
         // Não envia is_active: a resposta deve incluir o padrão true do banco.
         $this->postJson('/api/products', $data)
             ->assertCreated()
-            ->assertJsonPath('name', 'Jogo de Teste')
-            ->assertJsonPath('price', '199.90')
-            ->assertJsonPath('stock', 12)
-            ->assertJsonPath('is_active', true)
-            ->assertJsonCount(2, 'categories')
-            ->assertJsonCount(2, 'genres');
+            ->assertJsonPath('data.name', 'Jogo de Teste')
+            ->assertJsonPath('data.price', '199.90')
+            ->assertJsonPath('data.stock', 12)
+            ->assertJsonPath('data.is_active', true)
+            ->assertJsonCount(2, 'data.categories')
+            ->assertJsonCount(2, 'data.genres');
 
         $product = Product::where('name', 'Jogo de Teste')->firstOrFail();
         $this->assertDatabaseCount('products', 8);
@@ -74,7 +76,7 @@ class ProductApiTest extends TestCase
 
         $this->postJson('/api/products', $data)
             ->assertCreated()
-            ->assertJsonCount(0, 'genres');
+            ->assertJsonCount(0, 'data.genres');
     }
 
     public function test_partial_updates_preserve_omitted_fields_and_relationships(): void
@@ -84,9 +86,9 @@ class ProductApiTest extends TestCase
 
         $this->patchJson('/api/products/'.$product->id, ['stock' => 3])
             ->assertOk()
-            ->assertJsonPath('stock', 3)
-            ->assertJsonPath('price', $product->price)
-            ->assertJsonCount(2, 'genres');
+            ->assertJsonPath('data.stock', 3)
+            ->assertJsonPath('data.price', $product->price)
+            ->assertJsonCount(2, 'data.genres');
 
         $this->assertEqualsCanonicalizing($categories, $product->categories()->pluck('categories.id')->all());
     }
@@ -103,11 +105,11 @@ class ProductApiTest extends TestCase
             'category_ids' => [$category->id],
             'genre_ids' => [],
         ])->assertOk()
-            ->assertJsonPath('price', '149.90')
-            ->assertJsonPath('platform.id', $platform->id)
-            ->assertJsonPath('categories.0.id', $category->id)
-            ->assertJsonCount(1, 'categories')
-            ->assertJsonCount(0, 'genres');
+            ->assertJsonPath('data.price', '149.90')
+            ->assertJsonPath('data.platform.id', $platform->id)
+            ->assertJsonPath('data.categories.0.id', $category->id)
+            ->assertJsonCount(1, 'data.categories')
+            ->assertJsonCount(0, 'data.genres');
     }
 
     public function test_deleting_deactivates_the_product_without_removing_its_links(): void
@@ -122,16 +124,13 @@ class ProductApiTest extends TestCase
         $this->assertSame($categoryCount, $product->categories()->count());
 
         // Esta API administrativa inicial permite conferir e reativar cadastros inativos.
-        $this->getJson('/api/products/'.$product->id)->assertOk()->assertJsonPath('is_active', false);
+        $this->getJson('/api/products/'.$product->id)->assertOk()->assertJsonPath('data.is_active', false);
         $this->patchJson('/api/products/'.$product->id, ['is_active' => true])
-            ->assertOk()->assertJsonPath('is_active', true);
+            ->assertOk()->assertJsonPath('data.is_active', true);
     }
 
     public function test_invalid_input_is_rejected_without_inserting_a_product(): void
     {
-        // Retirar esta marcação quando os FormRequests forem implementados na etapa 7.
-        $this->markTestSkipped('Validação de entrada adiada para a etapa 7, a pedido do usuário.');
-
         $data = $this->productData();
         $data['name'] = '';
         $data['platform_id'] = 999999;
@@ -176,6 +175,36 @@ class ProductApiTest extends TestCase
             $this->assertDatabaseCount('products', 7);
             $this->assertDatabaseCount('category_product', 11);
         }
+    }
+
+    public function test_invalid_updates_preserve_product_data(): void
+    {
+        $product = Product::firstOrFail();
+
+        $this->patchJson('/api/products/'.$product->id, [
+            'price' => '-1',
+            'stock' => 4294967296,
+            'category_ids' => [],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['price', 'stock', 'category_ids']);
+
+        $this->assertSame($product->price, $product->fresh()->price);
+        $this->assertSame($product->stock, $product->fresh()->stock);
+    }
+
+    public function test_resources_hide_internal_fields_and_unvalidated_input_is_ignored(): void
+    {
+        $data = $this->productData();
+        $data['created_at'] = '2000-01-01 00:00:00';
+
+        $response = $this->postJson('/api/products', $data)->assertCreated();
+        $product = Product::findOrFail($response->json('data.id'));
+
+        $this->assertNotSame('2000-01-01 00:00:00', $product->created_at->format('Y-m-d H:i:s'));
+        $response->assertJsonMissingPath('data.created_at')
+            ->assertJsonMissingPath('data.platform_id')
+            ->assertJsonMissingPath('data.categories.0.pivot')
+            ->assertJsonMissingPath('data.genres.0.pivot');
     }
 
     // Prepara um corpo JSON válido com os IDs efetivamente criados pelos seeders.

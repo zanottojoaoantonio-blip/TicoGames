@@ -12,13 +12,17 @@ class PlatformService
     // withCount() inclui products_count sem carregar os produtos inteiros.
     public function listAll(): Collection
     {
-        return Platform::withCount('products')->orderBy('name')->get();
+        $platforms = Platform::withCount('products')->orderBy('name')->get();
+
+        return $platforms;
     }
 
     // Busca pelo ID e inclui a contagem; findOrFail() gera 404 se não encontrar.
     public function findById(int $id): Platform
     {
-        return Platform::withCount('products')->findOrFail($id);
+        $platform = Platform::withCount('products')->findOrFail($id);
+
+        return $platform;
     }
 
     // Cria o cadastro; a validação dos dados será feita na etapa de FormRequests.
@@ -26,7 +30,9 @@ class PlatformService
     {
         $platform = Platform::create($data);
 
-        return $platform->loadCount('products');
+        $platform = $platform->loadCount('products');
+
+        return $platform;
     }
 
     // Localiza o registro, atualiza os campos recebidos e devolve sua contagem.
@@ -35,7 +41,9 @@ class PlatformService
         $platform = Platform::findOrFail($id);
         $platform->update($data);
 
-        return $platform->refresh()->loadCount('products');
+        $platform = $platform->refresh()->loadCount('products');
+
+        return $platform;
     }
 
     // Preserva os produtos: os vínculos devem ser ajustados antes da exclusão.

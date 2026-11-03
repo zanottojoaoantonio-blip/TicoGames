@@ -1,5 +1,11 @@
 # Etapa 6 — CRUD básico de produtos
 
+> Etapa 8 implementada em 02/11/2026: consultas públicas do catálogo preservadas; alterações exigem sessão e perfil admin. Veja [authentication.md](authentication.md) e [account-checkout.md](account-checkout.md) para o estado atual.
+
+
+> Atualização de 02/11/2026: FormRequests e Resources implementados na etapa 7. O contrato atual usa `data` nas respostas de sucesso e validação de entrada. Veja [requests-resources.md](requests-resources.md); os trechos abaixo sobre ausência de validação/Resources descrevem a etapa anterior.
+
+
 Parte de produtos concluída em 28/10/2026. Depois, o usuário autorizou concluir os CRUDs do catálogo juntos e explicar um deles com todas as requisições e respostas. Categorias, plataformas e gêneros também estão implementados; veja [crud-catalog.md](crud-catalog.md). Resources e FormRequests ainda ficam para a etapa 7.
 
 ## Conceitos antes do código

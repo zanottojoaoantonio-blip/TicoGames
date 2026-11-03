@@ -1,18 +1,67 @@
 # TicoGames — contexto para continuar o projeto
 
-Última atualização: 29/10/2026.
+Última atualização: 02/11/2026.
 
 ## Leia isto primeiro
 
 Este arquivo registra o contexto para continuar em outro computador ou conversa. Leia também `docs/data-model.md`, `docs/migrations.md`, `docs/seeders.md`, `docs/crud-catalog.md`, `docs/crud-products.md` e `docs/README.md`. Confira os arquivos atuais antes de alterar código. Os caminhos são relativos à raiz.
 
-**As etapas 1 a 5 estão concluídas. Na etapa 6, os quatro CRUDs básicos do catálogo estão implementados: produtos, categorias, plataformas e gêneros, com 20 rotas em `/api`. Em 29/10, os Controllers foram adaptados ao exemplo do usuário: pasta `Controllers/Api`, IDs inteiros, variáveis antes das respostas e `$request->all()`. Os Services usam `listAll()` e `findById()` e recebem IDs na atualização e exclusão. A validação de entrada foi retirada a pedido do usuário e ficará para os FormRequests na etapa 7. A suíte atual passou com 17 testes, 254 asserções e 3 testes de validação explicitamente pendentes. Não iniciar outra etapa sem “próximo”. Os fluxos de contas, endereços, carrinho e pedidos ainda não estão implementados.**
+**Etapas 1 a 8 implementadas. Em 02/11/2026, o usuário autorizou concluir os outros fluxos de CRUD e iniciar a autenticação; depois indicou o tutorial sanctum.html como modelo. O backend agora tem catálogo, contas, endereços, carrinho e pedidos, com FormRequests, Resources e acesso por perfil/proprietário. Sanctum usa sessão/cookie, sem Bearer. AuthController e AuthService seguem o guia indicado, incluindo RegisterRequest, /api/me e no-store nas respostas de cadastro/login. A suíte passou com 40 testes, 511 asserções e nenhum ignorado; Pint aplicado. Sessão, CSRF e CORS conferidos por HTTP real. A etapa 9 (Vue) continua pendente, somente quando solicitada. Leia docs/authentication.md e docs/account-checkout.md antes de continuar.**
 
 O usuário pediu: “pode fazer todos os crud e me explique os depois pode ser somente 1 mas todos as requisições e suas respectivas respostas desde onde ela inicia até onde termina”. Foram completados os quatro CRUDs do catálogo definidos nesta conversa e explicado produtos do início ao fim. Ele usa Thunder Client; a imagem anterior tinha `www.localhost` e um header Accept incorreto. Orientar `http://localhost:8000/api/products`, sem `www`, e `Accept: application/json`. Não alterar o backend para compensar erros de preenchimento.
 
 O usuário detalhou o fluxo visual do carrinho, mas esclareceu em seguida: “Não, vamos seguir os passos ja delimitados”. Esse fluxo fica planejado para a etapa 9; não implementar o frontend agora. A preparação iniciada não criou telas. O usuário pediu manter `front-end/package-lock.json`; o arquivo foi restaurado e conferido com `package.json`.
 
 Ao concluir uma etapa, atualize este arquivo com o que mudou, o que foi verificado e qual é o próximo passo. Registre limitações sem apresentar funcionalidades planejadas como já implementadas.
+
+## Etapa 8 e demais fluxos de CRUD — 02/11/2026
+
+Pedido do usuário: arrumar os Controllers e Services dos outros cadastros e iniciar a autenticação; em seguida pediu usar https://victor-raphael17.github.io/studies/sanctum.html#passo-1 como modelo. A implementação foi adaptada a esse guia após leitura integral.
+
+- Instalado laravel/sanctum 4.3.3 com Composer, preservando as rotas existentes. Como usamos apenas sessão, não foram adicionados HasApiTokens, emissão de tokens nem migration de personal_access_tokens.
+- RegisterRequest e LoginRequest; AuthService com register(array, Request), login(array, Request) e logout(Request); AuthController com register, login, me e logout. Senha usa o cast hashed já existente. Cadastro público sempre recebe customer; UserResource inclui role, mas nunca senha.
+- Rotas de autenticação somente em routes/api.php: POST register/login públicos com throttle:6,1; GET me e POST logout protegidos por auth:sanctum. Não duplicadas em routes/web.php. O Service regenera a sessão depois de autenticar e a invalida no logout. Cadastro/login e me usam no-store.
+- statefulApi() ativo, CORS com credenciais e origem exata localhost:5173, defaults locais no config/sanctum.php e exemplos no .env.example. O Vue continuará usando localhost:5173 e a API localhost:8000, em vez da porta 80/127.0.0.1 da aula. Requisições manuais precisam de Origin para ativar a sessão stateful.
+- Mantido catálogo público para consulta, conforme regra anterior da loja. Somente admin modifica produtos/categorias/plataformas/gêneros e gerencia users. Produtos inativos ficam visíveis apenas ao admin na consulta de catálogo.
+- UserController/UserService: CRUD administrativo em /api/users; cliente altera/exclui a própria conta em /api/user e consulta identidade em /api/me. Contas com pedidos não são excluídas, preservando a restrição histórica. Não existe endpoint para promover perfis.
+- AddressController/AddressService: CRUD por dono, sem aceitar user_id do cliente. CartController/CartService: carrinho persistente, inclusão, alteração e remoção de itens e merge após login. O frontend ainda precisa enviar/limpar os itens locais; o endpoint soma quantidades em cada chamada.
+- OrderController/OrderService: consulta própria, criação a partir do carrinho e endereço próprio, cópias históricas, total calculado com BCMath e pagamento/cancelamento simulados. Criação não reserva estoque; confirmação valida novamente e baixa uma única vez. Transações e lockForUpdate no pedido/produtos protegem as decisões. A suíte SQLite não testa a concorrência real de bloqueios MySQL; essa limitação está registrada em docs/account-checkout.md.
+- Verificado após ajustes ao guia: **40 testes aprovados, 511 asserções**, sem ignorados. Testes em SQLite em memória, incluindo isolamento entre contas, estoque, rollback, histórico e throttle. Os testes de troca de conta usam sessão nova e guard web explícito para simular clientes distintos sem enfraquecer o middleware.
+- Verificação HTTP real com a conta admin de demonstração existente: csrf-cookie 204; login sem CSRF 419; login válido 200; me 200; POST vazio em categories 422; mesma escrita sem CSRF 419; logout 204; me depois do logout 401. CORS respondeu origem localhost:5173 e credenciais. Não foram criados registros de negócio no MySQL por essa verificação.
+- Pint aplicado. O Composer indicou um aviso em symfony/mime já presente no lock: atualizado 7.4.19 para 7.4.22 e polyfill-mbstring 1.43.0 para 1.43.3; instalação final informou ausência de avisos de segurança.
+- Guias novos: docs/authentication.md (correspondência com a aula e consumo por cookie/CSRF) e docs/account-checkout.md (rotas e regras dos fluxos novos).
+
+Próximo passo: etapa 9, Vue, somente quando solicitado. Não criar telas nesta entrega. Os registros abaixo descrevem o histórico anterior e não substituem este estado atual.
+
+## Validação da etapa 7 — 02/11/2026
+
+A pedido do usuário, iniciado Docker Desktop e executado `docker compose up -d mysql php`. Ambos os serviços estão saudáveis. A suíte passou antes e depois do Pint: **23 testes aprovados, 369 asserções, nenhum ignorado**. Pint corrigiu formatação em 24 arquivos PHP das alterações acumuladas. Testes em SQLite em memória, sem alterar os dados do MySQL. A etapa 7 está concluída; os relatos de bloqueio abaixo descrevem a tentativa anterior à inicialização do ambiente. Próxima etapa: Sanctum, somente quando solicitado.
+
+## Etapa 7 — 02/11/2026
+
+O usuário autorizou implementar FormRequests e Resources após a explicação. Guia: `docs/requests-resources.md`. O histórico abaixo descreve etapas anteriores, inclusive a antiga ausência de validação.
+
+- Store/Update Requests próprios para Product, Category, Platform e Genre, sem classes base extras.
+- Atualização parcial com sometimes; required impede esvaziar campos obrigatórios. Nomes de classificações únicos, ignorando o ID da URL na edição.
+- Produto exige plataforma existente, categoria não vazia, IDs distintos e existentes, preço não negativo com até duas casas e limites de coluna, estoque inteiro entre 0 e 4294967295. Gêneros opcionais aceitam [] para remover todos.
+- authorize retorna true nesta etapa; permissões ficam na etapa 8.
+- Resources usam whenLoaded e whenCounted. Mantidas regras de negócio dos Services e DELETE 204.
+- Testes de validação reativados, contrato data atualizado e acrescentados casos de atualização inválida e saída sem campos internos.
+- Sintaxe PHP passou. Testes não executados por ausência de vendor/autoload.php; Docker não está disponível. Não declarar a suíte aprovada nesta entrega.
+
+## Comparação com o tutorial em 31/10/2026
+
+A pedido do usuário, comparados os códigos existentes com https://victor-raphael17.github.io/studies/laravel.html, especialmente os Passos 5 a 8, correspondentes às partes já implementadas. Os Controllers já seguem o Passo 8: injeção do Service, IDs inteiros, cinco ações, variáveis e respostas JSON.
+
+- Ajustados os quatro Services para guardar os resultados em variáveis antes de retornar, como no tutorial.
+- Acrescentado `whereNumber('id')` aos quatro resources, mantendo o parâmetro renomeado para `{id}`. A referência usa os nomes padrão `genre` e `book`; a restrição precisa acompanhar o nome real do parâmetro.
+- Mantidos campos e relacionamentos próprios da loja, casts, contagens, ordenação, transações, desativação de produtos e bloqueio de exclusão de classificações utilizadas. O tutorial trata livros com um gênero; copiar sua exclusão em cascata alteraria as regras da loja.
+- Mantidos seeders repetíveis com `firstOrCreate`, `firstOrNew` e `syncWithoutDetaching`, preservando preços, estoques e vínculos existentes. A referência mostra `create`/`insert`, que não preservam esses comportamentos. Não adicionado `HasFactory`, conforme preferência registrada do usuário.
+- Criado `tests/Feature/ApiRouteTest.php`: verifica 404 para ID não numérico nos quatro recursos, em GET, PUT, PATCH e DELETE.
+- Sintaxe PHP e `git diff --check` verificados. Suíte e Pint não executados: Docker indisponível e dependências locais ausentes (`vendor/autoload.php`). Os números de testes da revisão anterior são históricos; não representam uma execução desta comparação.
+- FormRequests e Resources continuam na etapa 7; autenticação na etapa 8. Esta comparação não iniciou essas etapas.
+
+Checklist para o ambiente preparado: executar `php artisan test`, executar Pint nos arquivos alterados e conferir GET/PUT/PATCH/DELETE `/api/products/abc` e equivalentes com resposta 404.
 
 ## Contexto do estudante e forma de trabalhar
 
@@ -38,7 +87,7 @@ E-commerce de jogos físicos e consoles chamado **TicoGames**.
 - Banco: MySQL 8.4.
 - Ambiente: Docker e Docker Compose.
 - Frontend: Vue, com Vite, na pasta `front-end/`.
-- Autenticação planejada: Laravel Sanctum, na etapa 8.
+- Autenticação: Laravel Sanctum por sessão e cookie, implementada na etapa 8.
 - Ambiente de origem: Windows com PowerShell. Os caminhos locais e os processos não são transferidos só por copiar este arquivo.
 - A revisão das etapas 1 a 4 ocorreu também em Linux com Bash, na pasta `/home/joaoantonio/TicoGames`. A etapa 5 foi executada no Windows com PowerShell, em `C:\Users\Pichau\TicoGames`. `docs/README.md` tem instruções para Linux e Windows.
 
@@ -51,9 +100,9 @@ E-commerce de jogos físicos e consoles chamado **TicoGames**.
 | 3 | Models | Concluída: 10 Models revisados, comentados e com sintaxe PHP verificada. |
 | 4 | Migrations | Concluída: 12 novas, 15 aplicadas no total e verificadas no MySQL. |
 | 5 | Seeders | Concluída: carga fictícia sem factories, repetição verificada e testes aprovados. |
-| 6 | CRUD básico: Controllers e Services | Quatro CRUDs do catálogo concluídos; fluxos de contas, endereços, carrinho e pedidos ainda pendentes. |
-| 7 | CRUD completo: Resources e FormRequests | Pendente. |
-| 8 | Registro, login e sessão com Laravel Sanctum | Pendente. |
+| 6 | CRUD básico: Controllers e Services | Catálogo concluído; fluxos de contas, endereços, carrinho e pedidos completados junto à etapa 8. |
+| 7 | CRUD completo: Resources e FormRequests | Concluída: 23 testes aprovados, 369 asserções; Pint aplicado. |
+| 8 | Registro, login e sessão com Laravel Sanctum | Concluída: sessão/cookie, CSRF, perfis e proprietário; 40 testes e 511 asserções no conjunto. |
 | 9 | Frontend: login/registro, catálogo, administração, carrinho, pagamento simulado e status | Pendente. |
 
 ## Regras de negócio definidas
@@ -100,7 +149,7 @@ Campos e regras estão em `docs/data-model.md`; a implementação e as verifica�
 
 Os 10 Models estão revisados: `User`, `Address`, `Category`, `Platform`, `Genre`, `Product`, `Cart`, `CartItem`, `Order` e `OrderItem`. `Category.products()` e `Product.categories()` usam `belongsToMany`, sem `category_id` em `products`. As tabelas de ligação usam relacionamentos muitos-para-muitos do Eloquent, sem classes próprias.
 
-Os Models, as tabelas e os seeders estão definidos e verificados. Produtos, categorias, plataformas e gêneros têm CRUD básico. Os fluxos de contas, endereços, carrinho e pedidos permanecem pendentes; não apresentar a compra como pronta. Resources e FormRequests ficam para a etapa 7 e autenticação para a etapa 8. Aguardar “próximo” antes de outra etapa.
+Os Models, tabelas e seeders estão definidos. Catálogo, contas, endereços, carrinho e pedidos têm seus fluxos HTTP implementados com validação, Resources e autenticação. A compra e o pagamento simulado existem no backend; não há telas prontas. Os detalhes e limites de verificação atuais estão nos guias authentication.md e account-checkout.md. Aguardar solicitação antes de iniciar a etapa 9.
 
 ## Revisão da etapa 6 em 29/10/2026 — padrão solicitado pelo usuário
 

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreGenreRequest;
+use App\Http\Requests\UpdateGenreRequest;
+use App\Http\Resources\GenreResource;
 use App\Services\GenreService;
-use Illuminate\Http\Request;
 
 // Recebe as requisições de gêneros e delega as operações ao Service.
 class GenreController extends Controller
@@ -19,15 +21,15 @@ class GenreController extends Controller
     {
         $genres = $this->genreService->listAll();
 
-        return response()->json($genres);
+        return GenreResource::collection($genres);
     }
 
-    // POST /api/genres: repassa os dados; a validação ficará nos FormRequests.
-    public function store(Request $request)
+    // POST /api/genres: envia somente os dados validados ao Service.
+    public function store(StoreGenreRequest $request)
     {
-        $genre = $this->genreService->create($request->all());
+        $genre = $this->genreService->create($request->validated());
 
-        return response()->json($genre, 201);
+        return (new GenreResource($genre))->response()->setStatusCode(201);
     }
 
     // GET /api/genres/{id}: o Service busca o registro ou gera o erro 404.
@@ -35,15 +37,15 @@ class GenreController extends Controller
     {
         $genre = $this->genreService->findById($id);
 
-        return response()->json($genre);
+        return new GenreResource($genre);
     }
 
     // PUT ou PATCH /api/genres/{id}: envia o ID e os dados ao Service.
-    public function update(Request $request, int $id)
+    public function update(UpdateGenreRequest $request, int $id)
     {
-        $genre = $this->genreService->update($id, $request->all());
+        $genre = $this->genreService->update($id, $request->validated());
 
-        return response()->json($genre);
+        return new GenreResource($genre);
     }
 
     // DELETE /api/genres/{id}: exclui se não houver produtos associados e responde sem corpo.

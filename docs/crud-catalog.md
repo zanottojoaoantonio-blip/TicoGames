@@ -1,5 +1,11 @@
 # Etapa 6 — CRUDs básicos do catálogo
 
+> Etapa 8 implementada em 02/11/2026: consultas públicas do catálogo preservadas; alterações exigem sessão e perfil admin. Veja [authentication.md](authentication.md) e [account-checkout.md](account-checkout.md) para o estado atual.
+
+
+> Atualização de 02/11/2026: FormRequests e Resources implementados na etapa 7. O contrato atual usa `data` nas respostas de sucesso e validação de entrada. Veja [requests-resources.md](requests-resources.md); os trechos abaixo sobre ausência de validação/Resources descrevem a etapa anterior.
+
+
 Em 28/10/2026, o usuário autorizou implementar os CRUDs do catálogo juntos e explicar um deles por completo depois. Foram concluídos **produtos, categorias, plataformas e gêneros**. Resources e FormRequests permanecem na etapa 7; autenticação e permissões, na etapa 8.
 
 Revisão de 29/10/2026: os Controllers seguem o exemplo fornecido pelo usuário, com IDs inteiros, variáveis antes das respostas e `$request->all()`. A validação de entrada foi retirada a pedido dele e será implementada nos FormRequests; nesta etapa, use corpos válidos. As restrições do banco continuam existindo, mas não substituem a validação HTTP.

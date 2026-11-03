@@ -1,42 +1,29 @@
 # TicoGames
 
+> Atualização de 02/11/2026: FormRequests e Resources implementados na etapa 7. O contrato atual usa `data` nas respostas de sucesso e validação de entrada. Veja [requests-resources.md](requests-resources.md); os trechos abaixo sobre ausência de validação/Resources descrevem a etapa anterior.
+
+
 Projeto final de curso: loja de jogos físicos e consoles, com backend Laravel, banco MySQL e frontend Vue.
 
-## Etapa atual: 6 — CRUDs básicos do catálogo concluídos
+## Etapa atual: 8 — backend autenticado
 
-Após o CRUD de produtos, o usuário autorizou implementar os CRUDs do catálogo juntos e explicar um deles por completo. Produtos, categorias, plataformas e gêneros possuem Controllers, Services e 20 rotas JSON no total. O guia [crud-catalog.md](crud-catalog.md) apresenta os quatro cadastros, e [crud-products.md](crud-products.md) acompanha cada requisição do Thunder Client até o banco e a resposta de volta.
+O catálogo tem CRUD completo de produtos, categorias, plataformas e gêneros, com FormRequests e API Resources. Foram acrescentados os fluxos de contas, endereços, carrinho e pedidos, respeitando dono, estoque e histórico. Autenticação usa sessão/cookie com Sanctum, seguindo a aula indicada pelo usuário.
 
-Em 28/10/2026, concluímos os seeders usando os Models diretamente, sem factories. O MySQL possui 20 tabelas e recebeu 2 usuários, 2 endereços, 3 categorias, 3 plataformas, 4 gêneros e 7 produtos, com as associações de categorias e gêneros. Carrinhos e pedidos continuam vazios. A carga foi executada duas vezes sem duplicações.
+Visitantes consultam os produtos ativos. Administradores modificam o catálogo e gerenciam contas. Clientes autenticados administram os próprios endereços, carrinho e pedidos. Pagamento é simulado; o estoque só diminui ao aceitar a confirmação, dentro de uma transação.
 
-A modelagem define várias categorias e uma plataforma por produto, gêneros e pagamento simulado confirmado pelo cliente. Os 10 Models, as migrations e os seeders estão preparados. Na etapa 6, os quatro CRUDs do catálogo estão implementados. Resources e FormRequests ficam para a etapa 7 e autenticação para a etapa 8. Os fluxos de contas, endereços, carrinho e pedidos ainda precisam ser implementados, respeitando usuários, estoque e histórico.
+A suíte atual passou com **40 testes e 511 asserções**, sem ignorados, em SQLite em memória. Sessão, CSRF e CORS foram verificados também por HTTP real. Pint aplicado. A concorrência real dos bloqueios do MySQL não foi exercitada pela suíte SQLite.
 
-No `User`, os comentários explicam os campos permitidos, os recursos padrão do Laravel, os casts e os relacionamentos. A sintaxe PHP foi verificada. Toda a configuração de autenticação, incluindo registro, login, sessão, Sanctum e regras de acesso, fica para a etapa 8, assim como suas verificações específicas de segurança. As relações com os dados da loja foram verificadas com registros temporários na etapa 4.
+Guias atuais:
 
-No `Address`, os campos guardam destinatário, CEP, rua, número, complemento, bairro, cidade e estado. `user_id` identifica o usuário, e `user()` descreve o relacionamento `belongsTo` com `User`. CEP e número são texto, e complemento é opcional. Esses valores foram preservados na verificação com dados temporários.
+- [authentication.md](authentication.md): Sanctum, correspondência com o tutorial, rotas de login e consumo por cookies/CSRF.
+- [account-checkout.md](account-checkout.md): contas, endereços, carrinho e pedidos.
+- [requests-resources.md](requests-resources.md): validação e JSON com data, introduzidos na etapa 7.
+- [crud-catalog.md](crud-catalog.md) e [crud-products.md](crud-products.md): explicações e histórico da implementação do catálogo.
+- [data-model.md](data-model.md), [migrations.md](migrations.md) e [seeders.md](seeders.md): estrutura e carga inicial.
 
-No `Category`, `name` guarda o nome da categoria e `products()` usa `belongsToMany`, pois produtos podem participar de várias categorias. O Eloquent usa a tabela de ligação `category_product`, alinhada com `Product.categories()`. As associações foram verificadas no MySQL.
+A carga de demonstração permanece com usuários, endereços e produtos fictícios. As verificações automatizadas não criaram pedidos nem alteraram produtos no MySQL. O frontend Vue existe como projeto inicial em front-end/, mas suas telas e integração continuam para a etapa 9, somente após solicitação do usuário.
 
-No `Platform`, `name` guarda o nome da plataforma e `products()` usa `hasMany`: uma plataforma reúne vários produtos, e cada produto aponta para uma plataforma por `platform_id`. Esse vínculo foi verificado no MySQL.
-
-No `Genre`, `name` guarda o nome do gênero e `products()` usa `belongsToMany`, através de `genre_product`. Jogos com vários gêneros e um console sem gênero foram verificados com dados temporários.
-
-No `Product`, os campos guardam plataforma, nome, descrição, preço, caminho da imagem, estoque e ativo. `categories()` e `genres()` usam tabelas de ligação; não há `category_id` no produto. Os casts retornam preço como texto decimal com duas casas, estoque como inteiro e ativo como booleano. Os valores e as associações foram verificados com dados temporários na etapa 4.
-
-No `Cart`, `user_id` identifica o dono, `user()` usa `belongsTo` e `items()` usa `hasMany`. Produtos e quantidades ficam nos itens, em `cart_items`. A unicidade de `user_id` e a exclusão dos itens em cascata foram verificadas no MySQL. A incorporação do carrinho de visitante será implementada nas etapas seguintes.
-
-No `CartItem`, `cart_id` indica o carrinho, `product_id` indica o produto e `quantity` guarda a quantidade, com cast inteiro. As duas relações usam `belongsTo`. O preço vem do produto atual. A quantidade padrão e a unicidade do par `cart_id` e `product_id` foram verificadas no MySQL.
-
-No `Order`, os campos guardam usuário, status, total e uma cópia do endereço de entrega. `user()` usa `belongsTo` e `items()` usa `hasMany`. `total` tem cast `decimal:2`. O banco aceita `pending_payment`, `paid` e `cancelled`, com padrão `pending_payment`.
-
-No `OrderItem`, os campos guardam pedido, produto, nome histórico, preço unitário histórico e quantidade. As relações `order()` e `product()` usam `belongsTo`; `unit_price` tem cast `decimal:2` e `quantity`, `integer`. A cópia do endereço, do nome e do preço será preenchida pelo fluxo de criação do pedido, nas etapas de CRUD. O cálculo do total e a confirmação do pagamento também ficam para esse fluxo.
-
-A sintaxe PHP dos Models e migrations foi verificada; Pint passou nas 12 migrations novas. As relações, casts, restrições e cópias históricas preenchidas manualmente foram verificados no MySQL, e os registros temporários foram desfeitos. Os 2 testes iniciais continuam passando. O fluxo automático de compra e pagamento ainda será implementado.
-
-Os dados iniciais são criados pelos seeders, sem factories. A suíte atual tem 17 testes aprovados, 254 asserções e 3 testes de validação pendentes. A pedido do usuário, os Controllers estão em `app/Http/Controllers/Api`, recebem IDs inteiros e repassam `$request->all()` aos Services; a validação de entrada ficará para os FormRequests na etapa 7. Autenticação e telas ainda não foram implementadas.
-
-A modelagem está em [data-model.md](data-model.md).
-
-Para continuar em outro computador ou em uma nova conversa, leia [gpt.md](gpt.md): ele registra as decisões, as verificações realizadas e o próximo passo.
+Para continuar em outro computador ou nova conversa, leia [gpt.md](gpt.md), que registra as decisões e resultados, incluindo o histórico das etapas anteriores.
 
 ## Conceitos
 
@@ -196,4 +183,4 @@ docker compose up -d --build node
 - `storage/`: arquivos gerados, sessões, cache e logs.
 - `front-end/`: projeto Vue separado do backend.
 
-Os quatro CRUDs do catálogo estão concluídos. Aguardar o usuário dizer “próximo” antes de iniciar outra parte. O percurso de todas as requisições de produtos está em [crud-products.md](crud-products.md).
+A etapa 8 do backend está concluída. Aguardar solicitação antes de iniciar a etapa 9 (Vue). O fluxo atual de autenticação está em [authentication.md](authentication.md).
