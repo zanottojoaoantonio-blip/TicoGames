@@ -21,17 +21,14 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile.dev
+    # Compartilha a configuração da raiz sem criar outro arquivo .env em api/.
+    env_file: ./.env
     depends_on:
       mysql:
         condition: service_healthy
     volumes:
       - ./api:/app
       - api_vendor:/app/vendor
-      - type: bind
-        source: ./.env
-        target: /app/.env
-        bind:
-          create_host_path: false
     expose:
       - "8000"
     healthcheck:

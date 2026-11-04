@@ -54,7 +54,12 @@ Adaptações às regras já combinadas: o catálogo pode ser consultado por visi
 
 ## Configuração local
 
-Os valores abaixo estão em `api/.env.example`. Ao migrar de uma configuração que usava as portas 5173 ou 8000 no navegador, atualize o `.env` da raiz e execute `docker compose exec api php artisan config:clear`.
+Os valores abaixo estão em `api/.env.example`, que é apenas o modelo. A configuração local fica somente no `.env` da raiz e chega ao Laravel pelo `env_file` do Compose. Ao migrar de uma configuração que usava as portas 5173 ou 8000 no navegador, atualize esse `.env` e aplique as alterações:
+
+```bash
+docker compose exec api php artisan config:clear
+docker compose up -d --force-recreate --no-deps --wait api
+```
 
 ```dotenv
 APP_URL=http://localhost
@@ -105,6 +110,8 @@ Primeiro faça GET em `http://localhost/sanctum/csrf-cookie`. Para operações q
 | POST `/api/logout` | Sem campos obrigatórios. | 204 sem corpo. |
 
 Credenciais inválidas retornam 422. Campos inválidos retornam 422 com `errors`. Ausência ou divergência do CSRF nas chamadas stateful retorna 419. Acesso autenticado sem o perfil necessário retorna 403. O throttle da aula limita tentativas de cadastro/login e responde 429 quando excedido.
+
+`GET /api/users` exige uma sessão de administrador: visitante recebe 401, cliente recebe 403 e administrador recebe 200. As rotas privadas da API respondem 401 em JSON também sem `Accept: application/json`, sem tentar redirecionar para uma rota web chamada `login`. No Insomnia, faça o login na mesma sessão de cookies e envie `Origin: http://localhost` para que o Sanctum reconheça essa sessão.
 
 Pelo novo proxy, a conta de demonstração passou pelo fluxo real: CSRF 204, login sem token 419, login com token 200, `/api/me` 200, logout 204 e `/api/me` 401. A suíte Laravel passou com 44 testes e 664 asserções no contêiner FrankenPHP.
 

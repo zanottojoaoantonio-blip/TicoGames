@@ -1,12 +1,12 @@
 # TicoGames — contexto para continuar o projeto
 
-Última atualização: 03/11/2026.
+Última atualização: 04/11/2026.
 
 ## Leia isto primeiro
 
 Este arquivo registra o contexto para continuar em outro computador ou conversa. Leia também `docs/data-model.md`, `docs/migrations.md`, `docs/seeders.md`, `docs/crud-catalog.md`, `docs/crud-products.md` e `docs/README.md`. Confira os arquivos atuais antes de alterar código. Os caminhos são relativos à raiz.
 
-**Estado atual. O usuário pediu a retomada da etapa 8 com explicações passo a passo. O Sanctum 4.3.3 foi reinstalado a partir do lock. O cadastro, o login, a consulta da conta e o logout usam sessão, cookie e CSRF. Os fluxos privados voltaram à API com autenticação, e as operações administrativas exigem perfil admin. A suíte passou com 44 testes e 664 asserções. O fluxo com cookies foi confirmado também por HTTP em SQLite temporário. O Vue segue para a etapa 9 quando solicitado.**
+**Estado atual. O usuário pediu a retomada da etapa 8 com explicações passo a passo. O Sanctum 4.3.3 foi reinstalado a partir do lock. O cadastro, o login, a consulta da conta e o logout usam sessão, cookie e CSRF. Os fluxos privados voltaram à API com autenticação, e as operações administrativas exigem perfil admin. A suíte passou com 45 testes e 684 asserções. O acesso sem autenticação à API retorna 401 JSON mesmo sem o header Accept, corrigindo o erro 500 em /api/users. O Vue segue para a etapa 9 quando solicitado.**
 
 O Compose segue a estrutura do projeto de referência. O Laravel roda com FrankenPHP no serviço `api` em `api/`, o Vue fica em `front/` e o Nginx de entrada em `proxy/`. O endereço público é `http://localhost`. As referências a `php`, `front-end/` e às portas 5173 e 8000 no navegador nos relatos abaixo descrevem configurações anteriores. Os passos atuais estão em [README.md](README.md) e [authentication.md](authentication.md).
 
@@ -15,6 +15,25 @@ O usuário pediu: “pode fazer todos os crud e me explique os depois pode ser s
 O usuário detalhou o fluxo visual do carrinho, mas esclareceu em seguida: “Não, vamos seguir os passos ja delimitados”. Esse fluxo fica planejado para a etapa 9; não implementar o frontend agora. A preparação iniciada não criou telas. O usuário pediu manter `front-end/package-lock.json`; o arquivo foi restaurado e conferido com `package.json`.
 
 Ao concluir uma etapa, atualize este arquivo com o que mudou, o que foi verificado e qual é o próximo passo. Registre limitações sem apresentar funcionalidades planejadas como já implementadas.
+
+## Correção do acesso sem autenticação — 04/11/2026
+
+- O usuário relatou 500 em `GET /api/users`. O middleware de autenticação tentava resolver `route('login')` quando a requisição não pedia JSON, antes do tratamento JSON de exceções.
+- Configurado `redirectGuestsTo` em `api/bootstrap/app.php` para retornar null nos caminhos `api/*`, permitindo a resposta 401 JSON já definida no Handler. Mantido o comportamento padrão fora da API.
+- Acrescentado teste que reproduzia o 500 e agora verifica 401 JSON sem redirecionamento com Accept ausente, `*/*`, `text/html` e `application/json`.
+- Verificado: 45 testes e 684 asserções em SQLite em memória; Pint nos dois arquivos PHP; HTTP pelo proxy com visitante 401, cliente 403 e administrador 200 em `/api/users`. As verificações HTTP apenas consultaram dados e fizeram login/logout com as contas de demonstração.
+
+## Configuração única do ambiente — 04/11/2026
+
+- O usuário pediu somente um `.env`. O arquivo ativo permanece na raiz; `api/.env.example` continua apenas como modelo versionado.
+- O serviço `api` usa `env_file: ./.env`. Removida a montagem do arquivo em `/app/.env`, que podia deixar um arquivo vazio em `api/.env`.
+- Preservadas a chave e as credenciais existentes. O Laravel recebe as variáveis do ambiente do contêiner. Depois de editar o `.env`, limpe o cache e recrie a API conforme `README.md`.
+- Atualizados os passos de geração da chave para usar `key:generate --show` e salvar o resultado somente no `.env` da raiz.
+- `phpunit.xml` define os valores de teste em `$_SERVER`, que o Laravel consulta antes das variáveis herdadas do Docker. O TestCase interrompe a inicialização se o ambiente não for `testing` com SQLite em memória, antes das migrations.
+- `composer test` executa o PHPUnit diretamente, evitando os avisos do adaptador do `artisan test` sobre o arquivo `.env` ausente no contêiner.
+- Durante a primeira validação, a tentativa de substituir as variáveis apenas com `<env force="true">` não substituiu `$_SERVER`. A suíte atingiu o MySQL e limpou os dados de demonstração. O estado original foi recuperado dos logs binários anteriores a `binlog.000005:237` em um MySQL temporário isolado e restaurado. Todos os 54 INSERTs do dump foram conferidos integralmente; a estrutura ficou equivalente, com apenas a declaração redundante de `CHARACTER SET utf8mb4` explícita na saída do dump. Não foi usada uma nova carga de seeders para substituir os dados originais.
+- Verificado após corrigir o isolamento: 44 testes e 664 asserções no PHPUnit, sem avisos; proteção contra MySQL confirmada antes das migrations; roteiro Bash de geração da chave verificado com chave vazia e existente. O roteiro PowerShell foi revisado, mas não executado neste Linux. A etapa 9 (Vue) continua aguardando solicitação.
+- HTTP após restaurar: catálogo 200, CSRF 204, login/me 200 e logout 204 para cliente e administrador; consulta sem login 401. O `.env` da raiz permaneceu byte a byte igual ao original, e `api/.env` não foi recriado.
 
 ## Retomada passo a passo do Sanctum — 03/11/2026
 
@@ -336,19 +355,15 @@ docker compose up -d --build --remove-orphans --wait
 docker compose logs -f api
 ```
 
-Depois que o log informar que o servidor iniciou, encerre a visualização com Ctrl+C:
+Depois que o log informar que o servidor iniciou, encerre a visualização com Ctrl+C. Se `APP_KEY` estiver vazia, siga o bloco de geração e gravação da chave para PowerShell em `docs/README.md`. Em seguida:
 
 ```powershell
-# Gera a chave apenas se o novo .env ainda estiver sem uma chave.
-if (-not (Select-String -LiteralPath .env -Pattern '^APP_KEY=.+$' -Quiet)) {
-    docker compose exec api php artisan key:generate
-}
-
 # Atualiza as configurações carregadas e verifica o ambiente.
 docker compose exec api php artisan config:clear
+docker compose up -d --force-recreate --no-deps --wait api
 docker compose exec api php artisan --version
 docker compose exec api php artisan db:show
-docker compose exec api php artisan test
+docker compose exec api composer test
 ```
 
 Em um banco novo, reproduza a estrutura com `docker compose exec api php artisan migrate`, conforme `docs/migrations.md`, e carregue os exemplos com `docker compose exec api php artisan db:seed`, conforme `docs/seeders.md`. O comando `composer run setup` não é o roteiro usado neste projeto.

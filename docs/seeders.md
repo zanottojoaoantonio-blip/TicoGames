@@ -109,7 +109,7 @@ docker compose exec api php artisan db:seed
 docker compose exec api php artisan db:show --counts
 
 # Executa os testes em SQLite em memória, conforme phpunit.xml.
-docker compose exec api php artisan test
+docker compose exec api composer test
 ```
 
 Não é necessário usar `migrate:fresh --seed`, que removeria as tabelas e seus dados. `db:seed` é suficiente para esta carga.

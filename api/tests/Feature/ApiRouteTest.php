@@ -6,6 +6,17 @@ use Tests\TestCase;
 
 class ApiRouteTest extends TestCase
 {
+    public function test_private_api_returns_json_401_for_guests_regardless_of_accept_header(): void
+    {
+        foreach ([[], ['Accept' => '*/*'], ['Accept' => 'text/html'], ['Accept' => 'application/json']] as $headers) {
+            $this->get('/api/users', $headers)
+                ->assertUnauthorized()
+                ->assertHeader('Content-Type', 'application/json')
+                ->assertHeaderMissing('Location')
+                ->assertJson(['message' => 'Unauthenticated.']);
+        }
+    }
+
     public function test_api_not_found_errors_are_json_with_a_wildcard_accept_header(): void
     {
         // A configuração local de erros continua ativa após integrar as novas rotas.

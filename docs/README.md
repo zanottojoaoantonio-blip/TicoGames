@@ -13,7 +13,7 @@ O catálogo tem CRUD completo de produtos, categorias, plataformas e gêneros, c
 
 Visitantes consultam os produtos ativos. Administradores modificam o catálogo e gerenciam contas. Clientes autenticados administram os próprios endereços, carrinho e pedidos. Pagamento é simulado; o estoque só diminui ao aceitar a confirmação, dentro de uma transação.
 
-A suíte atual passou com **44 testes e 664 asserções** em SQLite em memória. Sessão, CSRF e CORS foram verificados também por HTTP em um contêiner com SQLite temporário. O Pint passou nos arquivos PHP alterados. A concorrência real dos bloqueios do MySQL não foi exercitada pela suíte SQLite.
+A suíte atual passou com **45 testes e 684 asserções** em SQLite em memória. Sessão, CSRF e CORS foram verificados também por HTTP em um contêiner com SQLite temporário. O acesso a `/api/users` foi verificado pelo proxy: visitante recebe 401 JSON mesmo sem pedir JSON, cliente recebe 403 e administrador recebe 200. O Pint passou nos arquivos PHP alterados. A concorrência real dos bloqueios do MySQL não foi exercitada pela suíte SQLite.
 
 Guias atuais:
 
@@ -34,7 +34,7 @@ Para continuar em outro computador ou nova conversa, leia [gpt.md](gpt.md), que 
 - **`api/`:** código Laravel e Dockerfiles do FrankenPHP. O Compose usa `api/Dockerfile.dev` e monta o código local.
 - **`front/`:** projeto Vue compilado e servido pelo Nginx no serviço `frontend`.
 - **`proxy/`:** imagem Nginx que encaminha as requisições ao Vue ou à API.
-- **`.env`:** arquivo local na raiz, criado a partir de `api/.env.example`. O Compose lê as credenciais do MySQL e monta o mesmo arquivo no Laravel.
+- **`.env`:** único arquivo de configuração local, na raiz, criado a partir de `api/.env.example`. O Compose lê as credenciais do MySQL e usa `env_file` para entregar as variáveis ao Laravel. O arquivo `api/.env.example` é apenas um modelo; não crie `api/.env`.
 - **Extensões PHP:** acrescentam recursos à linguagem. `pdo_mysql` permite conectar ao MySQL; `intl` fornece a formatação usada por comandos como `db:show`.
 
 O proxy atende em `http://localhost` e envia `/api`, `/sanctum`, `/up`, `/images` e `/storage` ao Laravel. Os demais caminhos vão para o Vue. O MySQL preserva os dados no volume `mysql_data` e aceita conexões locais em `127.0.0.1:3306`.
@@ -84,11 +84,14 @@ Quando o log mostrar que o servidor iniciou, encerre a visualização com Ctrl+C
 ```bash
 # Gera a chave somente se ela ainda não estiver preenchida no .env.
 if ! grep -q '^APP_KEY=.' .env; then
-    docker compose exec api php artisan key:generate
+    ticogames_app_key=$(docker compose exec -T api php artisan key:generate --show --no-ansi) || exit 1
+    sed -i "s|^APP_KEY=.*|APP_KEY=$ticogames_app_key|" .env
+    unset ticogames_app_key
 fi
 
-# Descarta configurações antigas em cache após preparar o .env.
+# Descarta o cache e recria a API para carregar as variáveis do .env atualizado.
 docker compose exec api php artisan config:clear
+docker compose up -d --force-recreate --no-deps --wait api
 ```
 
 No PowerShell:
@@ -96,14 +99,22 @@ No PowerShell:
 ```powershell
 # Preserva uma chave existente e gera somente quando o campo está vazio.
 if (-not (Select-String -LiteralPath .env -Pattern '^APP_KEY=.+$' -Quiet)) {
-    docker compose exec api php artisan key:generate
+    $ticogamesAppKey = docker compose exec -T api php artisan key:generate --show --no-ansi
+    if ($LASTEXITCODE -ne 0) { throw "Falha ao gerar APP_KEY." }
+    $ticogamesEnvPath = Join-Path (Get-Location) '.env'
+    $ticogamesEnvText = [System.IO.File]::ReadAllText($ticogamesEnvPath)
+    $ticogamesEnvText = $ticogamesEnvText -replace '(?m)^APP_KEY=.*$', "APP_KEY=$ticogamesAppKey"
+    [System.IO.File]::WriteAllText($ticogamesEnvPath, $ticogamesEnvText)
 }
 
-# Descarta configurações antigas em cache após preparar o .env.
+# Descarta o cache e recria a API para carregar as variáveis do .env atualizado.
 docker compose exec api php artisan config:clear
+docker compose up -d --force-recreate --no-deps --wait api
 ```
 
 Em `docker compose exec api php artisan`, `api` identifica o serviço do Compose e `php` é o programa executado dentro do contêiner.
+
+O Laravel recebe a configuração pelo ambiente do contêiner, sem um arquivo `/app/.env`. Por isso, a geração usa `key:generate --show` e grava o resultado no `.env` da raiz. Ao editar configurações do Laravel nesse arquivo posteriormente, execute os mesmos comandos de limpeza de cache e recriação da API para aplicar os valores novos. Uma chave já preenchida deve ser preservada.
 
 Ao mover ou copiar a pasta, use novamente `docker compose up -d --build --wait` na nova localização para atualizar a montagem. O comando preserva os volumes.
 
@@ -140,7 +151,7 @@ docker compose exec api php artisan --version
 docker compose exec api php artisan db:show
 
 # Executa a suíte Laravel em SQLite em memória.
-docker compose exec api php artisan test
+docker compose exec api composer test
 ```
 
 Resultados registrados até a etapa 4, em 28/10/2026:
