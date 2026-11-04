@@ -10,7 +10,7 @@ Os Controllers seguem o exemplo do usuário, com IDs inteiros e variáveis antes
 
 Cada cadastro tem um Controller e um Service próprios, seguindo o padrão de produtos, sem classes base, interfaces ou repositórios extras.
 
-Os Controllers ficam em `app/Http/Controllers/Api/`, com namespace `App\Http\Controllers\Api`. Os Services continuam em `app/Services/`.
+Os Controllers ficam em `api/app/Http/Controllers/Api/`, com namespace `App\Http\Controllers\Api`. Os Services continuam em `api/app/Services/`.
 
 | Cadastro | Controller | Service | URL base |
 | --- | --- | --- | --- |
@@ -19,7 +19,7 @@ Os Controllers ficam em `app/Http/Controllers/Api/`, com namespace `App\Http\Con
 | Plataformas | `PlatformController` | `PlatformService` | `/api/platforms` |
 | Gêneros | `GenreController` | `GenreService` | `/api/genres` |
 
-Use `http://localhost:8000`, sem `www`. Configure `Accept: application/json`, sem `*/` antes do valor. Para enviar um corpo JSON, configure também `Content-Type: application/json`.
+Use `http://localhost`, sem `www`. Configure `Accept: application/json`, sem `*/` antes do valor. Para enviar um corpo JSON, configure também `Content-Type: application/json`.
 
 ## As cinco ações de cada cadastro
 
@@ -33,7 +33,7 @@ Substitua `RESOURCE` por `products`, `categories`, `platforms` ou `genres`.
 | PATCH ou PUT `/api/RESOURCE/ID` | `update()` | `update($id, $request->validated())` | 200 e o objeto atualizado em `data`; 404 ou 422 em caso de erro. |
 | DELETE `/api/RESOURCE/ID` | `destroy()` | `delete()` | 204 sem corpo; a regra de exclusão está abaixo. |
 
-As quatro chamadas `Route::apiResource()` em `routes/api.php` registram essas 20 rotas, com parâmetro `{id}`. O Controller passa o ID ao Service, que busca com `findOrFail()` e gera 404 quando não encontra. Na atualização, o FormRequest também confirma a existência antes de validar os campos. `apiResource()` registra rotas; as classes em `app/Http/Resources` organizam o JSON.
+As quatro chamadas `Route::apiResource()` em `api/routes/api.php` registram essas 20 rotas, com parâmetro `{id}`. O Controller passa o ID ao Service, que busca com `findOrFail()` e gera 404 quando não encontra. Na atualização, o FormRequest também confirma a existência antes de validar os campos. `apiResource()` registra rotas; as classes em `api/app/Http/Resources` organizam o JSON.
 
 ## Categorias, plataformas e gêneros
 
@@ -101,7 +101,7 @@ O guia [crud-products.md](crud-products.md) contém os corpos de exemplo e o **p
 ## Verificações realizadas
 
 - [x] Pint foi aplicado nos arquivos combinados nesta integração: Requests, Resources, Controllers, comentários de Services e testes.
-- [x] Suíte com **43 testes aprovados e 660 asserções**, sem testes ignorados, em SQLite em memória.
+- [x] Suíte com **44 testes aprovados e 664 asserções**, sem testes ignorados, em SQLite em memória.
 - [x] Os três cadastros foram testados em criação, listagem, consulta, atualização e exclusão.
 - [x] Nomes obrigatórios, tipos, tamanho, duplicação e renomeação mantendo o próprio nome verificados.
 - [x] Respostas com `data` e relacionamentos de produtos sem `pivot` verificados.
@@ -111,7 +111,7 @@ O guia [crud-products.md](crud-products.md) contém os corpos de exemplo e o **p
 
 Os três testes de validação antes ignorados foram reativados nesta etapa. As respostas 422 usam `message` e `errors`, sem a chave externa `data` dos Resources.
 
-Os testes estão em `tests/Feature/CatalogApiTest.php` e `tests/Feature/ProductApiTest.php`.
+Os testes estão em `api/tests/Feature/CatalogApiTest.php` e `api/tests/Feature/ProductApiTest.php`.
 
 ## Checklist manual no Thunder Client
 

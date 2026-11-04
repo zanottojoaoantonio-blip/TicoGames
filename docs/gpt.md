@@ -6,13 +6,31 @@
 
 Este arquivo registra o contexto para continuar em outro computador ou conversa. Leia também `docs/data-model.md`, `docs/migrations.md`, `docs/seeders.md`, `docs/crud-catalog.md`, `docs/crud-products.md` e `docs/README.md`. Confira os arquivos atuais antes de alterar código. Os caminhos são relativos à raiz.
 
-**Etapas 1 a 8 implementadas. Em 02/11/2026, o usuário autorizou concluir os outros fluxos de CRUD e iniciar a autenticação; depois indicou o tutorial sanctum.html como modelo. O backend agora tem catálogo, contas, endereços, carrinho e pedidos, com FormRequests, Resources e acesso por perfil/proprietário. Sanctum usa sessão/cookie, sem Bearer. AuthController e AuthService seguem o guia indicado, incluindo RegisterRequest, /api/me e no-store nas respostas de cadastro/login. Após a integração de 03/11, a suíte passou com 43 testes, 660 asserções e nenhum ignorado; Pint aplicado. Sessão, CSRF e CORS conferidos por HTTP real. A etapa 9 (Vue) continua pendente, somente quando solicitada. Leia docs/authentication.md e docs/account-checkout.md antes de continuar.**
+**Estado atual. O usuário pediu a retomada da etapa 8 com explicações passo a passo. O Sanctum 4.3.3 foi reinstalado a partir do lock. O cadastro, o login, a consulta da conta e o logout usam sessão, cookie e CSRF. Os fluxos privados voltaram à API com autenticação, e as operações administrativas exigem perfil admin. A suíte passou com 44 testes e 664 asserções. O fluxo com cookies foi confirmado também por HTTP em SQLite temporário. O Vue segue para a etapa 9 quando solicitado.**
+
+O Compose segue a estrutura do projeto de referência. O Laravel roda com FrankenPHP no serviço `api` em `api/`, o Vue fica em `front/` e o Nginx de entrada em `proxy/`. O endereço público é `http://localhost`. As referências a `php`, `front-end/` e às portas 5173 e 8000 no navegador nos relatos abaixo descrevem configurações anteriores. Os passos atuais estão em [README.md](README.md) e [authentication.md](authentication.md).
 
 O usuário pediu: “pode fazer todos os crud e me explique os depois pode ser somente 1 mas todos as requisições e suas respectivas respostas desde onde ela inicia até onde termina”. Foram completados os quatro CRUDs do catálogo definidos nesta conversa e explicado produtos do início ao fim. Ele usa Thunder Client; a imagem anterior tinha `www.localhost` e um header Accept incorreto. Orientar `http://localhost:8000/api/products`, sem `www`, e `Accept: application/json`. Não alterar o backend para compensar erros de preenchimento.
 
 O usuário detalhou o fluxo visual do carrinho, mas esclareceu em seguida: “Não, vamos seguir os passos ja delimitados”. Esse fluxo fica planejado para a etapa 9; não implementar o frontend agora. A preparação iniciada não criou telas. O usuário pediu manter `front-end/package-lock.json`; o arquivo foi restaurado e conferido com `package.json`.
 
 Ao concluir uma etapa, atualize este arquivo com o que mudou, o que foi verificado e qual é o próximo passo. Registre limitações sem apresentar funcionalidades planejadas como já implementadas.
+
+## Retomada passo a passo do Sanctum — 03/11/2026
+
+1. Instalada a versão registrada no Composer, preservando as demais versões do lock.
+2. Restaurados `statefulApi()`, a origem do Vue e o CORS com credenciais. O CSRF é inicializado em `/sanctum/csrf-cookie`.
+3. Restaurados os FormRequests, o AuthService e o AuthController, que usa o UserResource existente. O middleware `RequireFrontendSession` rejeita cadastro e login sem sessão antes de gravar ou autenticar uma conta.
+4. Restauradas as rotas privadas com `auth:sanctum` e as permissões administrativas. Consultas públicas do catálogo mostram produtos ativos.
+5. Verificados 44 testes, 664 asserções, Pint e Composer. O teste HTTP confirmou CSRF, cadastro, login, consulta da conta, bloqueio de escrita para cliente e logout em SQLite temporário.
+
+O guia de uso está em [authentication.md](authentication.md). As seções seguintes registram o histórico.
+
+## Reversão da autenticação — 03/11/2026
+
+O usuário indicou o [guia de Laravel](https://victor-raphael17.github.io/studies/laravel.html) como referência para a arquitetura MVC com Service Layer, FormRequests e API Resources. O segundo material indicado, no Google Docs, exigiu login e ficou sem leitura.
+
+O Composer removeu apenas laravel/sanctum. O catálogo voltou às 20 rotas locais da etapa 7 e inclui produtos inativos nas consultas. As rotas de conta, endereços, carrinho e pedidos aguardam autenticação. Os testes HTTP que dependiam dessas rotas foram retirados da suíte e podem ser consultados no histórico Git. A verificação atual confirma que as rotas privadas e do Sanctum retornam 404. O histórico da integração anterior está registrado a seguir.
 
 ## Integração dos históricos em 03/11/2026
 
@@ -93,7 +111,7 @@ E-commerce de jogos físicos e consoles chamado **TicoGames**.
 - Banco: MySQL 8.4.
 - Ambiente: Docker e Docker Compose.
 - Frontend: Vue, com Vite, na pasta `front-end/`.
-- Autenticação: Laravel Sanctum por sessão e cookie, implementada na etapa 8.
+- Autenticação: Laravel Sanctum por sessão e cookie na etapa 8.
 - Ambiente de origem: Windows com PowerShell. Os caminhos locais e os processos não são transferidos só por copiar este arquivo.
 - A revisão das etapas 1 a 4 ocorreu também em Linux com Bash, na pasta `/home/joaoantonio/TicoGames`. A etapa 5 foi executada no Windows com PowerShell, em `C:\Users\Pichau\TicoGames`. `docs/README.md` tem instruções para Linux e Windows.
 
@@ -108,7 +126,7 @@ E-commerce de jogos físicos e consoles chamado **TicoGames**.
 | 5 | Seeders | Concluída: carga fictícia sem factories, repetição verificada e testes aprovados. |
 | 6 | CRUD básico: Controllers e Services | Catálogo concluído; fluxos de contas, endereços, carrinho e pedidos completados junto à etapa 8. |
 | 7 | CRUD completo: Resources e FormRequests | Concluída: 23 testes aprovados, 369 asserções; Pint aplicado. |
-| 8 | Registro, login e sessão com Laravel Sanctum | Concluída: sessão/cookie, CSRF, perfis e proprietário; 40 testes e 511 asserções no conjunto. |
+| 8 | Registro, login e sessão | Concluída com Sanctum. |
 | 9 | Frontend: login/registro, catálogo, administração, carrinho, pagamento simulado e status | Pendente. |
 
 ## Regras de negócio definidas
@@ -155,7 +173,7 @@ Campos e regras estão em `docs/data-model.md`; a implementação e as verifica�
 
 Os 10 Models estão revisados: `User`, `Address`, `Category`, `Platform`, `Genre`, `Product`, `Cart`, `CartItem`, `Order` e `OrderItem`. `Category.products()` e `Product.categories()` usam `belongsToMany`, sem `category_id` em `products`. As tabelas de ligação usam relacionamentos muitos-para-muitos do Eloquent, sem classes próprias.
 
-Os Models, tabelas e seeders estão definidos. Catálogo, contas, endereços, carrinho e pedidos têm seus fluxos HTTP implementados com validação, Resources e autenticação. A compra e o pagamento simulado existem no backend; não há telas prontas. Os detalhes e limites de verificação atuais estão nos guias authentication.md e account-checkout.md. Aguardar solicitação antes de iniciar a etapa 9.
+Os Models, tabelas e seeders estão definidos. O catálogo está disponível, e os fluxos de contas, endereços, carrinho e pedidos exigem autenticação. O guia de rotas está em account-checkout.md.
 
 ## Revisão da etapa 6 em 29/10/2026 — padrão solicitado pelo usuário
 
@@ -295,7 +313,7 @@ Esses são resultados anteriores, não uma garantia sobre o ambiente atual ou ou
 - A rota `/` ainda mostra a página padrão do Laravel.
 - O Vue está inicializado, mas as telas da loja não foram implementadas. Seu serviço não foi necessário para concluir a etapa 2.
 - Os quatro CRUDs do catálogo estão implementados. Os fluxos de contas, endereços, carrinho, pedidos, pagamento simulado e Sanctum permanecem pendentes.
-- O `Dockerfile` da raiz é separado da configuração de desenvolvimento. O Compose usa `Dockerfile.dev` para PHP e `front-end/Dockerfile.dev` para Vue.
+- Na configuração original, o Compose usava `Dockerfile.dev` para PHP e `front-end/Dockerfile.dev` para Vue.
 
 ## Continuar em outro computador
 
@@ -308,14 +326,14 @@ Com Docker Desktop aberto, execute no PowerShell, na raiz do projeto:
 ```powershell
 # Cria o arquivo local somente se ele ainda não existir.
 if (-not (Test-Path -LiteralPath .env)) {
-    Copy-Item -LiteralPath .env.example -Destination .env
+    Copy-Item -LiteralPath api/.env.example -Destination .env
 }
 
-# Prepara e inicia o backend e o MySQL; instala as dependências PHP.
-docker compose up -d --build mysql php
+# Prepara todos os serviços e substitui os contêineres antigos.
+docker compose up -d --build --remove-orphans --wait
 
 # Acompanha a instalação; Ctrl+C fecha apenas a visualização dos logs.
-docker compose logs -f php
+docker compose logs -f api
 ```
 
 Depois que o log informar que o servidor iniciou, encerre a visualização com Ctrl+C:
@@ -323,17 +341,17 @@ Depois que o log informar que o servidor iniciou, encerre a visualização com C
 ```powershell
 # Gera a chave apenas se o novo .env ainda estiver sem uma chave.
 if (-not (Select-String -LiteralPath .env -Pattern '^APP_KEY=.+$' -Quiet)) {
-    docker compose exec php php artisan key:generate
+    docker compose exec api php artisan key:generate
 }
 
 # Atualiza as configurações carregadas e verifica o ambiente.
-docker compose exec php php artisan config:clear
-docker compose exec php php artisan --version
-docker compose exec php php artisan db:show
-docker compose exec php php artisan test
+docker compose exec api php artisan config:clear
+docker compose exec api php artisan --version
+docker compose exec api php artisan db:show
+docker compose exec api php artisan test
 ```
 
-Em um banco novo, reproduza a estrutura com `docker compose exec php php artisan migrate`, conforme `docs/migrations.md`, e carregue os exemplos com `docker compose exec php php artisan db:seed`, conforme `docs/seeders.md`. O comando `composer run setup` não é o roteiro usado neste projeto.
+Em um banco novo, reproduza a estrutura com `docker compose exec api php artisan migrate`, conforme `docs/migrations.md`, e carregue os exemplos com `docker compose exec api php artisan db:seed`, conforme `docs/seeders.md`. O comando `composer run setup` não é o roteiro usado neste projeto.
 
 ## Prompt reutilizável — Controller e Service linha por linha
 

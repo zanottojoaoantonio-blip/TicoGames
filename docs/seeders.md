@@ -80,7 +80,7 @@ O mesmo recurso liga gêneros aos jogos. Os consoles têm a lista de gêneros va
 - 7 produtos: quatro versões de jogos e três consoles.
 - Elden Ring aparece para PlayStation 5 e Xbox Series, com preços e estoques separados.
 - 11 associações em `category_product` e 7 em `genre_product`.
-- A imagem `public/images/product-placeholder.svg` é uma ilustração genérica local, não uma foto de produto.
+- A imagem `api/public/images/product-placeholder.svg` é uma ilustração genérica local, não uma foto de produto.
 - Preços e estoques são fictícios. Os preços são textos decimais, como `'299.90'`.
 
 Contas exclusivamente para demonstração local:
@@ -100,16 +100,16 @@ Execute na raiz do projeto, com Docker e os serviços `mysql` e `php` ativos:
 
 ```bash
 # Aplica somente migrations pendentes, caso este seja um banco novo.
-docker compose exec php php artisan migrate
+docker compose exec api php artisan migrate
 
 # Cadastra os exemplos definidos pelos seeders, sem factories.
-docker compose exec php php artisan db:seed
+docker compose exec api php artisan db:seed
 
 # Mostra as tabelas e suas quantidades de registros.
-docker compose exec php php artisan db:show --counts
+docker compose exec api php artisan db:show --counts
 
 # Executa os testes em SQLite em memória, conforme phpunit.xml.
-docker compose exec php php artisan test
+docker compose exec api php artisan test
 ```
 
 Não é necessário usar `migrate:fresh --seed`, que removeria as tabelas e seus dados. `db:seed` é suficiente para esta carga.
@@ -126,7 +126,7 @@ Não é necessário usar `migrate:fresh --seed`, que removeria as tabelas e seus
 - [x] O MySQL tem 20 tabelas; carrinhos e pedidos continuam vazios.
 - [x] Os serviços `mysql` e `php` estavam saudáveis ao concluir a carga.
 
-Os testes novos estão em `tests/Feature/DatabaseSeederTest.php`. Os dados alterados dentro dos testes não foram gravados no MySQL do projeto.
+Os testes novos estão em `api/tests/Feature/DatabaseSeederTest.php`. Os dados alterados dentro dos testes não foram gravados no MySQL do projeto.
 
 ## Ocorrência do Docker no Windows
 

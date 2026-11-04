@@ -95,15 +95,15 @@ Isso permite ter vários produtos no carrinho e permite que o mesmo produto apar
 
 | Ordem | Migration | Informação principal |
 | --- | --- | --- |
-| 1 | [add_role_to_users_table](../database/migrations/2026_10_28_000001_add_role_to_users_table.php) | Alteração de tabela, enum e valor padrão. |
-| 2 | [create_addresses_table](../database/migrations/2026_10_28_000002_create_addresses_table.php) | Chave estrangeira, texto para CEP/número e complemento opcional. |
+| 1 | [add_role_to_users_table](../api/database/migrations/2026_10_28_000001_add_role_to_users_table.php) | Alteração de tabela, enum e valor padrão. |
+| 2 | [create_addresses_table](../api/database/migrations/2026_10_28_000002_create_addresses_table.php) | Chave estrangeira, texto para CEP/número e complemento opcional. |
 | 3–5 | `create_categories_table`, `create_platforms_table`, `create_genres_table` | Repetem a estrutura `id`, nome único e datas. |
-| 6 | [create_products_table](../database/migrations/2026_10_28_000006_create_products_table.php) | Plataforma, preço decimal, estoque sem sinal e ativo. |
+| 6 | [create_products_table](../api/database/migrations/2026_10_28_000006_create_products_table.php) | Plataforma, preço decimal, estoque sem sinal e ativo. |
 | 7–8 | `create_category_product_table`, `create_genre_product_table` | Chaves compostas para as relações muitos para muitos. |
-| 9 | [create_carts_table](../database/migrations/2026_10_28_000009_create_carts_table.php) | Usuário único para um carrinho por conta. |
-| 10 | [create_cart_items_table](../database/migrations/2026_10_28_000010_create_cart_items_table.php) | Quantidade e combinação única de carrinho/produto. |
-| 11 | [create_orders_table](../database/migrations/2026_10_28_000011_create_orders_table.php) | Status, total e campos para o endereço histórico. |
-| 12 | [create_order_items_table](../database/migrations/2026_10_28_000012_create_order_items_table.php) | Nome/preço históricos e combinação única de pedido/produto. |
+| 9 | [create_carts_table](../api/database/migrations/2026_10_28_000009_create_carts_table.php) | Usuário único para um carrinho por conta. |
+| 10 | [create_cart_items_table](../api/database/migrations/2026_10_28_000010_create_cart_items_table.php) | Quantidade e combinação única de carrinho/produto. |
+| 11 | [create_orders_table](../api/database/migrations/2026_10_28_000011_create_orders_table.php) | Status, total e campos para o endereço histórico. |
+| 12 | [create_order_items_table](../api/database/migrations/2026_10_28_000012_create_order_items_table.php) | Nome/preço históricos e combinação única de pedido/produto. |
 
 Os pedidos guardam a cópia do endereço, sem `address_id`. Os itens de pedido guardam `product_name` e `unit_price`, além do vínculo com o produto. O preenchimento dessas cópias e o cálculo do total serão feitos na criação do pedido, nas etapas de CRUD.
 
@@ -113,13 +113,13 @@ Execute na raiz do projeto:
 
 ```bash
 # Aplica somente as migrations que ainda estão pendentes.
-docker compose exec php php artisan migrate
+docker compose exec api php artisan migrate
 
 # Mostra quais arquivos já foram executados e o lote de cada um.
-docker compose exec php php artisan migrate:status
+docker compose exec api php artisan migrate:status
 
 # Mostra as tabelas e a quantidade de linhas.
-docker compose exec php php artisan db:show --counts
+docker compose exec api php artisan db:show --counts
 ```
 
 O banco agora tem **20 tabelas**: as **12 de negócio** e **8 técnicas do Laravel**, incluindo a própria tabela `migrations`. Há 15 registros de controle nessa tabela, todos no lote 1. As demais tabelas ficaram sem registros; os seeders serão a etapa 5.

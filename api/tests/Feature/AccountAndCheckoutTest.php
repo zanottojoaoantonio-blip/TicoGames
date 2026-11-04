@@ -18,7 +18,7 @@ class AccountAndCheckoutTest extends TestCase
         parent::setUp();
         $this->seed();
         // Simula a origem do Vue para ativar a sessão stateful do Sanctum.
-        $this->withHeader('Origin', 'http://localhost:5173');
+        $this->withHeader('Origin', 'http://localhost');
     }
 
     private function signIn(User $user): void
@@ -61,6 +61,27 @@ class AccountAndCheckoutTest extends TestCase
         $this->assertTrue(Hash::check('password123', $user->password));
         $this->assertAuthenticatedAs($user);
         $this->getJson('/api/me')->assertOk()->assertJsonPath('data.id', $user->id);
+    }
+
+    public function test_registration_and_login_require_the_frontend_session(): void
+    {
+        $this->withoutHeader('Origin');
+
+        $this->postJson('/api/register', [
+            'name' => 'Nova Conta',
+            'email' => 'no-session@test.test',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertStatus(419);
+
+        $this->assertDatabaseMissing('users', ['email' => 'no-session@test.test']);
+
+        $this->postJson('/api/login', [
+            'email' => $this->customer()->email,
+            'password' => 'password',
+        ])->assertStatus(419);
+
+        $this->assertGuest('web');
     }
 
     public function test_login_logout_and_invalid_credentials(): void

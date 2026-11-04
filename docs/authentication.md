@@ -2,6 +2,13 @@
 
 Implementada em 02/11/2026, seguindo os modelos da [Aula 2 — Laravel Sanctum](https://victor-raphael17.github.io/studies/sanctum.html#passo-1) indicada pelo usuário.
 
+## Retomada passo a passo
+
+1. O Composer instala o Sanctum 4.3.3 a partir do `composer.lock`. O projeto já possui rotas de API e usa a sessão do Laravel.
+2. `statefulApi()` prepara sessão e CSRF para a origem configurada. O proxy serve o Vue e encaminha as chamadas da API e do Sanctum na mesma origem, `http://localhost`.
+3. `RequireFrontendSession` retorna 419 antes de cadastro ou login se a requisição não recebeu uma sessão. Com a sessão preparada, os FormRequests validam os campos, o AuthService autentica e o UserResource apresenta a conta.
+4. `auth:sanctum` exige uma conta conectada nas rotas privadas. O middleware `admin` exige o perfil administrativo nas escritas do catálogo e na gestão de contas.
+
 ## O que identifica a conta
 
 O login usa a sessão do Laravel e um cookie enviado pelo navegador. Não há emissão de Bearer token, nem armazenamento de credenciais em localStorage. O `User` continua sem `HasApiTokens`; o cast `hashed` já existente salva a senha como hash.
@@ -16,22 +23,22 @@ O cookie `XSRF-TOKEN` tem outra função: seu valor vai no header `X-XSRF-TOKEN`
 | `AuthService::register`, `login` e `logout` | O Service cria/autentica a conta, regenera a sessão e a invalida ao sair. Recebe o Request para executar as operações de sessão, como na aula. |
 | `AuthController` | Delega ao Service, usa `validated()`, devolve `UserResource`, status 201/200 e `Cache-Control: no-store` no cadastro e no login. |
 | `GET /api/me` | Retorna a conta autenticada, também com `no-store`. |
-| Rotas em `routes/api.php` | Cadastro/login públicos com `throttle:6,1`; `me` e `logout` no grupo `auth:sanctum`. |
-| `statefulApi()`, CORS e domínio stateful | Configurados para o Vue em `http://localhost:5173` e a API em `http://localhost:8000`. |
+| Rotas em `api/routes/api.php` | Cadastro/login públicos com `throttle:6,1`; `me` e `logout` no grupo `auth:sanctum`. |
+| `statefulApi()`, CORS e domínio stateful | Vue e Laravel compartilham `http://localhost` pelo proxy. O Sanctum reconhece `localhost` como stateful. |
 
 Adaptações às regras já combinadas: o catálogo pode ser consultado por visitantes; somente administradores o modificam. `UserResource` inclui também `role` para a interface distinguir cliente e administrador. O cadastro público sempre usa o padrão `customer` do banco: `role` não é validado nem está em `$fillable`. O tutorial protege todo o catálogo e usa frontend na porta 80; essas duas escolhas não se aplicam à nossa loja.
 
 ## Arquivos e responsabilidades
 
-- `bootstrap/app.php`: ativa `statefulApi()` e registra o middleware `admin`.
-- `config/sanctum.php`: inclui os hosts e portas locais reconhecidos como frontend stateful.
-- `config/cors.php`: permite a origem exata do Vue, com credenciais.
-- `app/Http/Requests/RegisterRequest.php` e `LoginRequest.php`: validam a entrada.
-- `app/Services/AuthService.php`: cria conta e controla autenticação e sessão.
-- `app/Http/Controllers/Api/AuthController.php`: organiza o fluxo HTTP.
-- `app/Http/Resources/UserResource.php`: expõe id, name, email e role, sem senha ou remember_token.
-- `app/Http/Middleware/EnsureAdmin.php`: exige o perfil admin nas operações administrativas.
-- `routes/api.php`: reúne as rotas; não existem cópias de login/logout em `routes/web.php`.
+- `api/bootstrap/app.php`: ativa `statefulApi()` e registra o middleware `admin`.
+- `api/config/sanctum.php`: inclui os hosts e portas locais reconhecidos como frontend stateful.
+- `api/config/cors.php`: permite a origem exata do Vue, com credenciais.
+- `api/app/Http/Requests/RegisterRequest.php` e `LoginRequest.php`: validam a entrada.
+- `api/app/Services/AuthService.php`: cria conta e controla autenticação e sessão.
+- `api/app/Http/Controllers/Api/AuthController.php`: organiza o fluxo HTTP.
+- `api/app/Http/Resources/UserResource.php`: expõe id, name, email e role, sem senha ou remember_token.
+- `api/app/Http/Middleware/EnsureAdmin.php`: exige o perfil admin nas operações administrativas.
+- `api/routes/api.php`: reúne as rotas; não existem cópias de login/logout em `api/routes/web.php`.
 
 `StoreUserRequest` continua separado: é usado no CRUD administrativo de usuários. O cadastro público usa `RegisterRequest`, como no tutorial.
 
@@ -47,39 +54,48 @@ Adaptações às regras já combinadas: o catálogo pode ser consultado por visi
 
 ## Configuração local
 
-Os valores já estão no `.env.example`. Os defaults versionados também atendem ao ambiente local atual, sem precisar substituir o `.env` existente:
+Os valores abaixo estão em `api/.env.example`. Ao migrar de uma configuração que usava as portas 5173 ou 8000 no navegador, atualize o `.env` da raiz e execute `docker compose exec api php artisan config:clear`.
 
 ```dotenv
-FRONTEND_URL=http://localhost:5173
-SANCTUM_STATEFUL_DOMAINS=localhost:5173,localhost:8000,localhost,127.0.0.1:8000
+APP_URL=http://localhost
+FRONTEND_URL=http://localhost
+SANCTUM_STATEFUL_DOMAINS=localhost
 SESSION_SECURE_COOKIE=false
 ```
 
-No HTTP local, mantenha `SESSION_DOMAIN` sem domínio específico. Use o mesmo host no frontend e na API: não misture localhost e 127.0.0.1 na mesma sessão. Se mudar host ou porta do frontend, ajuste tanto CORS quanto os domínios stateful. Em HTTPS de produção, `SESSION_SECURE_COOKIE` deve ser true.
+No HTTP local, deixe `SESSION_DOMAIN` sem preencher e use `localhost` em todas as chamadas. No Vue, use URLs relativas, como `/api/me`, para passar pelo mesmo proxy. Em HTTPS de produção, `SESSION_SECURE_COOKIE` deve ser true.
 
-Para consumir a API no Vue, a etapa 9 usará uma instância Axios como a da aula, com os endereços do TicoGames:
+## Testar no navegador
+
+Abra `http://localhost` e execute o exemplo no console do navegador. Use uma conta local; o exemplo usa o cliente criado pelo [seeder](seeders.md).
 
 ```javascript
-const api = axios.create({
-  baseURL: 'http://localhost:8000',
-  withCredentials: true,
-  withXSRFToken: true,
-  headers: { Accept: 'application/json' },
+const headers = { Accept: 'application/json' };
+const csrf = () => decodeURIComponent(document.cookie
+  .split('; ').find(cookie => cookie.startsWith('XSRF-TOKEN='))
+  ?.slice('XSRF-TOKEN='.length) ?? '');
+const post = (path, body) => fetch(path, {
+  method: 'POST',
+  headers: { ...headers, 'Content-Type': 'application/json', 'X-XSRF-TOKEN': csrf() },
+  body: JSON.stringify(body),
 });
 
-await api.get('/sanctum/csrf-cookie');
-await api.post('/api/login', { email, password });
-const me = await api.get('/api/me');
-await api.post('/api/logout');
+console.log((await fetch('/sanctum/csrf-cookie', { headers })).status); // 204
+console.log((await post('/api/login', {
+  email: 'customer@ticogames.test', password: 'password',
+})).status); // 200
+console.log((await fetch('/api/me', { headers })).status); // 200
+console.log((await post('/api/logout')).status); // 204
+console.log((await fetch('/api/me', { headers })).status); // 401
 ```
 
-Este é um exemplo de consumo; as telas e a integração do Vue ainda não foram implementadas.
+O navegador envia o cookie de sessão nas requisições à mesma origem. O exemplo lê o `XSRF-TOKEN` antes de cada POST, pois o login regenera a sessão e pode atualizar o cookie.
 
 ## Testar no Thunder Client
 
-Use a mesma sessão de cookies para todas as chamadas. Configure `Accept: application/json` e `Origin: http://localhost:5173`. O header Origin permite que o Sanctum reconheça a requisição como stateful; no navegador ele é enviado automaticamente nas chamadas entre essas origens.
+Use a mesma sessão de cookies para todas as chamadas. Configure `Accept: application/json` e `Origin: http://localhost`. O Sanctum usa o `Origin` ou o `Referer` para reconhecer chamadas do frontend. No navegador esses cabeçalhos são gerenciados automaticamente.
 
-Primeiro faça GET em `http://localhost:8000/sanctum/csrf-cookie`. Para operações que alteram dados, envie `Content-Type: application/json` e o valor URL-decodificado do cookie `XSRF-TOKEN` no header `X-XSRF-TOKEN`. Preserve e envie também o cookie de sessão. Não adicione Authorization Bearer. Após logout, prepare novamente o CSRF antes de outro login.
+Primeiro faça GET em `http://localhost/sanctum/csrf-cookie`. Para operações que alteram dados, envie `Content-Type: application/json` e o valor URL-decodificado do cookie `XSRF-TOKEN` no header `X-XSRF-TOKEN`. Preserve e envie também o cookie de sessão. Não adicione Authorization Bearer. Após logout, prepare novamente o CSRF antes de outro login.
 
 | Método e rota | Corpo | Resposta |
 | --- | --- | --- |
@@ -90,17 +106,19 @@ Primeiro faça GET em `http://localhost:8000/sanctum/csrf-cookie`. Para operaç�
 
 Credenciais inválidas retornam 422. Campos inválidos retornam 422 com `errors`. Ausência ou divergência do CSRF nas chamadas stateful retorna 419. Acesso autenticado sem o perfil necessário retorna 403. O throttle da aula limita tentativas de cadastro/login e responde 429 quando excedido.
 
-## Verificações executadas
+Pelo novo proxy, a conta de demonstração passou pelo fluxo real: CSRF 204, login sem token 419, login com token 200, `/api/me` 200, logout 204 e `/api/me` 401. A suíte Laravel passou com 44 testes e 664 asserções no contêiner FrankenPHP.
 
-- [x] Suíte completa: 40 testes aprovados, 511 asserções, nenhum ignorado, em SQLite em memória.
+## Verificações anteriores à troca do proxy
+
+- [x] Suíte completa: 44 testes aprovados, 664 asserções, nenhum ignorado, em SQLite em memória.
 - [x] Cadastro não permite escolher admin, salva hash e inicia sessão.
 - [x] Validação do cadastro e limite de tentativas de login testados.
 - [x] Login, logout, dados da conta e acesso por perfil testados.
-- [x] HTTP real: 204 no CSRF, 419 sem header CSRF, 200 no login/me, 204 no logout e 401 em me após sair.
+- [x] HTTP real: 419 sem CSRF, 204 em csrf-cookie, 201 no cadastro, 200 no login/me, 403 na escrita do catálogo por cliente, 204 no logout e 401 em me após sair.
 - [x] CORS real: origem localhost:5173 permitida com credenciais.
-- [x] HTTP real: POST vazio de categoria autenticado retorna 422, sem criar registro; sem CSRF retorna 419.
+- [x] Cadastro e login sem sessão retornam 419. O teste confirma que o cadastro não cria conta nessa condição.
 - [x] Pint aplicado aos arquivos PHP desta entrega.
 
-Os testes automatizados não gravaram no MySQL. A verificação HTTP usou a conta administrativa de demonstração existente e somente consultou dados ou enviou entradas rejeitadas; não criou contas, produtos, carrinhos ou pedidos reais. Os cookies não foram registrados na documentação.
+A suíte usou SQLite em memória. A verificação HTTP criou uma conta descartável em um arquivo SQLite temporário no contêiner. O banco MySQL do projeto ficou intacto.
 
 Os novos CRUDs e o fluxo de pedidos estão em [account-checkout.md](account-checkout.md). Próxima etapa: telas e integração Vue, somente após solicitação do usuário.

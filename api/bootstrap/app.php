@@ -15,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Reconhece sessão/cookie do Vue nas chamadas à API.
+        // Permite que a API reconheça a sessão do frontend e valide o CSRF.
         $middleware->statefulApi();
         $middleware->alias(['admin' => EnsureAdmin::class]);
     })

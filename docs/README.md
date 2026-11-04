@@ -13,7 +13,7 @@ O catálogo tem CRUD completo de produtos, categorias, plataformas e gêneros, c
 
 Visitantes consultam os produtos ativos. Administradores modificam o catálogo e gerenciam contas. Clientes autenticados administram os próprios endereços, carrinho e pedidos. Pagamento é simulado; o estoque só diminui ao aceitar a confirmação, dentro de uma transação.
 
-A suíte atual passou com **43 testes e 660 asserções**, sem ignorados, em SQLite em memória. A suíte combinada foi executada nesta integração; sessão, CSRF e CORS também têm verificações HTTP anteriores registradas em `gpt.md`. Pint aplicado. A concorrência real dos bloqueios do MySQL não foi exercitada pela suíte SQLite.
+A suíte atual passou com **44 testes e 664 asserções** em SQLite em memória. Sessão, CSRF e CORS foram verificados também por HTTP em um contêiner com SQLite temporário. O Pint passou nos arquivos PHP alterados. A concorrência real dos bloqueios do MySQL não foi exercitada pela suíte SQLite.
 
 Guias atuais:
 
@@ -23,7 +23,7 @@ Guias atuais:
 - [crud-catalog.md](crud-catalog.md) e [crud-products.md](crud-products.md): explicações e histórico da implementação do catálogo.
 - [data-model.md](data-model.md), [migrations.md](migrations.md) e [seeders.md](seeders.md): estrutura e carga inicial.
 
-A carga de demonstração permanece com usuários, endereços e produtos fictícios. As verificações automatizadas não criaram pedidos nem alteraram produtos no MySQL. O frontend Vue existe como projeto inicial em front-end/, mas suas telas e integração continuam para a etapa 9, somente após solicitação do usuário.
+A carga de demonstração permanece com usuários, endereços e produtos fictícios. As verificações automatizadas não criaram pedidos nem alteraram produtos no MySQL. O frontend Vue existe como projeto inicial em front/, mas suas telas e integração continuam para a etapa 9, somente após solicitação do usuário.
 
 Para continuar em outro computador ou nova conversa, leia [gpt.md](gpt.md), que registra as decisões e resultados, incluindo o histórico das etapas anteriores.
 
@@ -31,12 +31,13 @@ Para continuar em outro computador ou nova conversa, leia [gpt.md](gpt.md), que 
 
 - **Composer:** instala as bibliotecas PHP nas versões registradas em `composer.lock`.
 - **Artisan:** ferramenta de comandos do Laravel, como gerar a chave da aplicação.
-- **Dockerfile.dev:** prepara o PHP para desenvolvimento.
-- **Compose:** organiza os serviços `php`, `mysql` e `node` e a comunicação entre eles.
-- **.env:** guarda configurações locais e não é enviado ao Git. O `.env.example` serve de modelo.
+- **`api/`:** código Laravel e Dockerfiles do FrankenPHP. O Compose usa `api/Dockerfile.dev` e monta o código local.
+- **`front/`:** projeto Vue compilado e servido pelo Nginx no serviço `frontend`.
+- **`proxy/`:** imagem Nginx que encaminha as requisições ao Vue ou à API.
+- **`.env`:** arquivo local na raiz, criado a partir de `api/.env.example`. O Compose lê as credenciais do MySQL e monta o mesmo arquivo no Laravel.
 - **Extensões PHP:** acrescentam recursos à linguagem. `pdo_mysql` permite conectar ao MySQL; `intl` fornece a formatação usada por comandos como `db:show`.
 
-Aproveitamos o Compose existente em vez de reinstalar o Laravel ou adicionar o Laravel Sail, mantendo uma única configuração de Docker para estudar.
+O proxy atende em `http://localhost` e envia `/api`, `/sanctum`, `/up`, `/images` e `/storage` ao Laravel. Os demais caminhos vão para o Vue. O MySQL preserva os dados no volume `mysql_data` e aceita conexões locais em `127.0.0.1:3306`.
 
 ## Primeira inicialização
 
@@ -47,17 +48,17 @@ No Linux, com Bash:
 ```bash
 # Cria a configuração local sem sobrescrever um .env existente.
 if [ ! -f .env ]; then
-    cp .env.example .env
+    cp api/.env.example .env
 fi
 
 # Verifica o Compose sem mostrar as credenciais.
 docker compose config --quiet
 
-# Constrói a imagem e inicia os serviços com os arquivos desta pasta.
-docker compose up -d --build mysql php
+# Constrói as imagens, remove contêineres dos serviços antigos e espera a pilha iniciar.
+docker compose up -d --build --remove-orphans --wait
 
 # Acompanha a instalação das dependências; Ctrl+C fecha apenas a visualização.
-docker compose logs -f php
+docker compose logs -f api
 ```
 
 No Windows, abra o Docker Desktop e use o PowerShell:
@@ -65,18 +66,17 @@ No Windows, abra o Docker Desktop e use o PowerShell:
 ```powershell
 # Cria a configuração local sem sobrescrever um .env existente.
 if (-not (Test-Path -LiteralPath .env)) {
-    Copy-Item -LiteralPath .env.example -Destination .env
+    Copy-Item -LiteralPath api/.env.example -Destination .env
 }
 
 # Valida o Compose sem mostrar as credenciais.
 docker compose config --quiet
 
-# Constrói a imagem PHP e inicia o banco e o backend em segundo plano.
-# O serviço php instala as dependências antes de iniciar o servidor.
-docker compose up -d --build mysql php
+# Constrói as imagens, remove contêineres dos serviços antigos e espera a pilha iniciar.
+docker compose up -d --build --remove-orphans --wait
 
 # Acompanha a inicialização; Ctrl+C encerra apenas a visualização do log.
-docker compose logs -f php
+docker compose logs -f api
 ```
 
 Quando o log mostrar que o servidor iniciou, encerre a visualização com Ctrl+C. No Linux:
@@ -84,11 +84,11 @@ Quando o log mostrar que o servidor iniciou, encerre a visualização com Ctrl+C
 ```bash
 # Gera a chave somente se ela ainda não estiver preenchida no .env.
 if ! grep -q '^APP_KEY=.' .env; then
-    docker compose exec php php artisan key:generate
+    docker compose exec api php artisan key:generate
 fi
 
 # Descarta configurações antigas em cache após preparar o .env.
-docker compose exec php php artisan config:clear
+docker compose exec api php artisan config:clear
 ```
 
 No PowerShell:
@@ -96,22 +96,22 @@ No PowerShell:
 ```powershell
 # Preserva uma chave existente e gera somente quando o campo está vazio.
 if (-not (Select-String -LiteralPath .env -Pattern '^APP_KEY=.+$' -Quiet)) {
-    docker compose exec php php artisan key:generate
+    docker compose exec api php artisan key:generate
 }
 
 # Descarta configurações antigas em cache após preparar o .env.
-docker compose exec php php artisan config:clear
+docker compose exec api php artisan config:clear
 ```
 
-O primeiro `php` identifica o serviço do Compose; o segundo é o programa executado dentro dele.
+Em `docker compose exec api php artisan`, `api` identifica o serviço do Compose e `php` é o programa executado dentro do contêiner.
 
-Ao mover ou copiar a pasta, use novamente `docker compose up -d --build mysql php` na nova localização. Isso atualiza a montagem dos arquivos. Apenas iniciar um contêiner antigo pode manter o vínculo com a pasta anterior. Não é necessário remover volumes para fazer essa atualização.
+Ao mover ou copiar a pasta, use novamente `docker compose up -d --build --wait` na nova localização para atualizar a montagem. O comando preserva os volumes.
 
-Abra [http://localhost:8000](http://localhost:8000). A página padrão do Laravel deve aparecer. A rota [http://localhost:8000/up](http://localhost:8000/up) verifica a inicialização da aplicação, mas não a conexão com o banco.
+Abra [http://localhost](http://localhost) para ver o Vue. A rota [http://localhost/up](http://localhost/up) verifica se o proxy alcança o Laravel. Para confirmar a conexão com o banco, use `docker compose exec api php artisan db:show`. Para testar login e cookies, siga o [guia de autenticação](authentication.md#testar-no-navegador).
 
 ## Configuração escolhida
 
-O `.env.example` tem comentários explicando cada bloco.
+O arquivo `api/.env.example` tem comentários explicando cada bloco.
 
 | Configuração | Valor | Motivo |
 | --- | --- | --- |
@@ -134,14 +134,13 @@ As credenciais de exemplo e `APP_DEBUG=true` são para desenvolvimento local. A 
 docker compose ps
 
 # Mostra a versão do Laravel instalada.
-docker compose exec php php artisan --version
+docker compose exec api php artisan --version
 
 # Conecta ao MySQL e mostra informações do banco.
-docker compose exec php php artisan db:show
+docker compose exec api php artisan db:show
 
-# Executa os testes que já acompanham o projeto.
-# Eles ainda não comprovam funcionalidades da loja nem a conexão MySQL.
-docker compose exec php php artisan test
+# Executa a suíte Laravel em SQLite em memória.
+docker compose exec api php artisan test
 ```
 
 Resultados registrados até a etapa 4, em 28/10/2026:
@@ -156,33 +155,32 @@ Resultados registrados até a etapa 4, em 28/10/2026:
 
 Os testes iniciais cobrem a resposta da página padrão e uma asserção de exemplo. A conexão MySQL foi verificada separadamente; os testes ainda não validam catálogo, carrinho, pedidos ou pagamento.
 
-As migrations já foram aplicadas neste ambiente. Em um banco novo, execute `docker compose exec php php artisan migrate` para reproduzir a estrutura, conforme [migrations.md](migrations.md), e `docker compose exec php php artisan db:seed` para carregar os exemplos da etapa 5, conforme [seeders.md](seeders.md). O comando padrão `composer run setup` não é o caminho usado neste roteiro.
+As migrations já foram aplicadas neste ambiente. Em um banco novo, execute `docker compose exec api php artisan migrate` para reproduzir a estrutura, conforme [migrations.md](migrations.md), e `docker compose exec api php artisan db:seed` para carregar os exemplos da etapa 5, conforme [seeders.md](seeders.md). O comando padrão `composer run setup` não é o caminho usado neste roteiro.
 
 ## Uso diário
 
 ```powershell
 # Inicia o ambiente preparado; não precisa gerar a chave novamente.
-docker compose up -d mysql php
+docker compose up -d --wait
 
 # Interrompe os serviços sem remover os dados do banco.
 docker compose stop
 ```
 
-O Vue já existe em `front-end/`, mas sua implementação fica para a etapa 9. Para iniciar também seu servidor de desenvolvimento quando necessário:
+O Nginx serve a versão compilada do Vue. Depois de editar arquivos em `front/`, reconstrua o serviço:
 
 ```powershell
-# Inicia o Vue na porta 5173 e instala suas dependências.
-docker compose up -d --build node
+docker compose up -d --build --wait frontend
 ```
 
 ## Estrutura para as próximas etapas
 
-- `app/Models`: classes que representam os dados e relacionamentos.
-- `database/migrations`: arquivos que criam e alteram tabelas.
-- `database/seeders`: dados iniciais e de demonstração.
-- `routes/web.php`: rotas web; por enquanto contém a página padrão.
-- `config/`: configurações do Laravel, que podem ler o `.env`.
-- `storage/`: arquivos gerados, sessões, cache e logs.
-- `front-end/`: projeto Vue separado do backend.
+- `api/app/Models`: classes que representam os dados e relacionamentos.
+- `api/database/migrations`: arquivos que criam e alteram tabelas.
+- `api/database/seeders`: dados iniciais e de demonstração.
+- `api/routes/web.php`: rotas web; por enquanto contém a página padrão.
+- `api/config/`: configurações do Laravel, que podem ler o `.env`.
+- `api/storage/`: arquivos gerados, sessões, cache e logs.
+- `front/`: projeto Vue separado do backend.
 
 A etapa 8 do backend está concluída. Aguardar solicitação antes de iniciar a etapa 9 (Vue). O fluxo atual de autenticação está em [authentication.md](authentication.md).

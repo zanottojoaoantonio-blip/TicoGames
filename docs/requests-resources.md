@@ -2,7 +2,7 @@
 
 > Estado após a integração de 03/11/2026: o backend já possui Sanctum e fluxos de contas, endereços, carrinho e pedidos. Escritas no catálogo exigem sessão e perfil admin; consultas públicas de produtos mostram somente ativos. Consulte [authentication.md](authentication.md) e [account-checkout.md](account-checkout.md) antes dos testes manuais. Os números de testes anteriores a esta integração são históricos.
 
-Concluída em 03/11/2026 para produtos, categorias, plataformas e gêneros. Os Controllers continuam em `app/Http/Controllers/Api`, recebem IDs inteiros e guardam o resultado do Service em uma variável antes de retornar.
+Concluída em 03/11/2026 para produtos, categorias, plataformas e gêneros. Os Controllers continuam em `api/app/Http/Controllers/Api`, recebem IDs inteiros e guardam o resultado do Service em uma variável antes de retornar.
 
 ## Responsabilidades
 
@@ -14,7 +14,7 @@ O **Controller** recebe a entrada já validada, chama o Service e retorna o Reso
 
 ## Arquivos
 
-As classes de entrada estão em `app/Http/Requests/` e as de saída em `app/Http/Resources/`.
+As classes de entrada estão em `api/app/Http/Requests/` e as de saída em `api/app/Http/Resources/`.
 
 | Cadastro | Criação | Atualização | Resposta |
 | --- | --- | --- | --- |
@@ -76,7 +76,7 @@ As datas são formatadas com `toISOString()`. O operador `?->` só chama o méto
 
 ## Requisições e respostas
 
-Use `http://localhost:8000`, `Accept: application/json` e, ao enviar corpo JSON, `Content-Type: application/json`.
+Use `http://localhost`, `Accept: application/json` e, ao enviar corpo JSON, `Content-Type: application/json`.
 
 POST `/api/categories`:
 
@@ -105,7 +105,7 @@ O caminho de cadastro é: Thunder Client → rota → FormRequest → Controller
 ## Verificações executadas
 
 - [x] Os três testes antes ignorados foram reativados.
-- [x] Suíte com **43 testes aprovados e 660 asserções**, sem testes ignorados, em SQLite em memória.
+- [x] Suíte com **44 testes aprovados e 664 asserções**, sem testes ignorados, em SQLite em memória.
 - [x] Cadastro, consulta, atualização, exclusão e desativação continuam funcionando.
 - [x] Campos obrigatórios, nomes únicos, atualização mantendo o próprio nome e valores inválidos retornam o resultado esperado.
 - [x] Atualizações inválidas preservam preço, estoque e associações.

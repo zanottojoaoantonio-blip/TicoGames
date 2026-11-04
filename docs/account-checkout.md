@@ -51,7 +51,7 @@ Não há pagamento real, campo payment_method, expiração automática nem cance
 
 ## Testes e limites da verificação
 
-A suíte atual tem 40 testes e 511 asserções, todos aprovados em SQLite em memória. Os casos novos cobrem autenticação, perfis, proprietário de endereço/carrinho/pedido, incorporação de itens, persistência ao sair, cópias históricas, estoque conferido novamente, repetição de decisões, rollback e limite do total. HTTP real confirmou sessão, CSRF e CORS.
+A suíte atual tem 44 testes e 664 asserções, todos aprovados em SQLite em memória. Os casos novos cobrem autenticação, perfis, proprietário de endereço/carrinho/pedido, incorporação de itens, persistência ao sair, cópias históricas, estoque conferido novamente, repetição de decisões, rollback e limite do total. HTTP real confirmou sessão, CSRF e CORS.
 
 Os bloqueios para concorrência estão implementados para o MySQL. A suíte SQLite verifica os resultados e transações sequenciais; ela não comprova a disputa simultânea de bloqueios do MySQL. Não foi executado teste de concorrência real nesta entrega.
 

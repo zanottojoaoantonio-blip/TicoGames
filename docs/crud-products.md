@@ -25,15 +25,15 @@ Usamos Services para concentrar as operações e as associações em um lugar re
 
 | Arquivo | Responsabilidade |
 | --- | --- |
-| `public/index.php` | Carrega o Laravel e entrega a requisição à aplicação. |
-| `bootstrap/app.php` | Carrega a API com o prefixo `/api`. |
-| `routes/api.php` | Registra as cinco ações por `Route::apiResource()`, com `{id}`. |
-| `app/Http/Controllers/Api/ProductController.php` | Liga a entrada HTTP ao Service e ao Resource. |
-| `app/Http/Requests/StoreProductRequest.php` | Valida a criação. |
-| `app/Http/Requests/UpdateProductRequest.php` | Confirma o ID e valida a atualização. |
-| `app/Services/ProductService.php` | Executa as operações do produto. |
-| `app/Http/Resources/ProductResource.php` | Define as colunas e relacionamentos enviados em `data`. |
-| `tests/Feature/ProductApiTest.php` | Verifica o CRUD, a validação e o rollback da transação. |
+| `api/public/index.php` | Carrega o Laravel e entrega a requisição à aplicação. |
+| `api/bootstrap/app.php` | Carrega a API com o prefixo `/api`. |
+| `api/routes/api.php` | Registra as cinco ações por `Route::apiResource()`, com `{id}`. |
+| `api/app/Http/Controllers/Api/ProductController.php` | Liga a entrada HTTP ao Service e ao Resource. |
+| `api/app/Http/Requests/StoreProductRequest.php` | Valida a criação. |
+| `api/app/Http/Requests/UpdateProductRequest.php` | Confirma o ID e valida a atualização. |
+| `api/app/Services/ProductService.php` | Executa as operações do produto. |
+| `api/app/Http/Resources/ProductResource.php` | Define as colunas e relacionamentos enviados em `data`. |
+| `api/tests/Feature/ProductApiTest.php` | Verifica o CRUD, a validação e o rollback da transação. |
 
 Autenticação e permissões são verificadas pelos middlewares das rotas. Os FormRequests retornam `true` em `authorize()` e validam os campos. O guia [requests-resources.md](requests-resources.md) explica as classes de entrada e saída.
 
@@ -95,7 +95,7 @@ O Resource apresenta ID, plataforma, nome, descrição, preço, imagem, estoque,
 
 ## Testar no Thunder Client
 
-Use `http://localhost:8000`, sem `www`. Configure `Accept: application/json` e, ao enviar corpo JSON, `Content-Type: application/json`. Os erros usam `message` e `errors`; não recebem a chave externa `data`.
+Use `http://localhost`, sem `www`. Configure `Accept: application/json` e, ao enviar corpo JSON, `Content-Type: application/json`. Os erros usam `message` e `errors`; não recebem a chave externa `data`.
 
 | Método e caminho | Ação | Sucesso |
 | --- | --- | --- |
@@ -225,7 +225,7 @@ Os erros não têm a chave externa `data`. O header `Accept` solicita JSON; as m
 ## Verificações executadas
 
 - [x] Pint foi aplicado nos arquivos combinados nesta integração.
-- [x] Suíte com **43 testes aprovados e 660 asserções**, sem testes ignorados, em SQLite em memória.
+- [x] Suíte com **44 testes aprovados e 664 asserções**, sem testes ignorados, em SQLite em memória.
 - [x] Listagem, consulta, criação com e sem gêneros, atualização parcial e substituição de associações.
 - [x] Desativação, reativação e preservação de vínculos.
 - [x] Validação de criação e atualização; entradas inválidas preservam os dados.

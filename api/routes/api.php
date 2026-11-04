@@ -9,11 +9,14 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PlatformController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Middleware\RequireFrontendSession;
 use Illuminate\Support\Facades\Route;
 
 // A origem stateful ativa sessão e CSRF antes destas ações, como no tutorial.
-Route::post('register', [AuthController::class, 'register'])->middleware('throttle:6,1');
-Route::post('login', [AuthController::class, 'login'])->middleware('throttle:6,1');
+Route::middleware([RequireFrontendSession::class, 'throttle:6,1'])->group(function () {
+    Route::post('register', [AuthController::class, 'register']);
+    Route::post('login', [AuthController::class, 'login']);
+});
 
 // O visitante consulta; somente o administrador modifica o catálogo.
 foreach (['products' => ProductController::class, 'categories' => CategoryController::class,

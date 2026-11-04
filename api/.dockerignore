@@ -11,7 +11,6 @@ auth.json
 storage/*.key
 **/node_modules
 vendor
-front-end
 public/build
 public/hot
 public/storage
