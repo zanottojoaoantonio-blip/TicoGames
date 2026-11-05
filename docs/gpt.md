@@ -392,6 +392,20 @@ Forma curta de pedir novamente:
 
 > Explique um Controller e seu Service linha por linha, seguindo o prompt reutilizável salvo em docs/gpt.md.
 
+## Prompt reutilizável — Sintaxe dos Services e do Sanctum
+
+> Leia as alterações recentes em `docs/`, especialmente `authentication.md`, `requests-resources.md` e este arquivo. Compare os exemplos com o código atual, resuma as mudanças que afetam a explicação e aponte divergências entre os docs e o repositório. Explique em português, com trechos reais e links para as linhas correspondentes. Mantenha a tarefa como uma leitura explicativa.
+>
+> Use `CategoryController` e `CategoryService` para mostrar o caminho de uma requisição, da rota ao JSON. No cadastro de uma categoria, explique o que acontece primeiro em `$this->categoryService->create($request->validated())`. Detalhe o construtor com `private CategoryService $categoryService`, a injeção do Laravel, `$this`, `->`, `::`, tipos dos parâmetros e do retorno, `return` e `void`. Passe pelos cinco métodos do Service e mostre onde o FormRequest valida, onde o Eloquent acessa o banco e onde o Resource monta a resposta. Use `ProductService` para explicar `DB::transaction(function () use ($data) { ... })` e o que acontece se a gravação de um vínculo falhar.
+>
+> Para o Sanctum, leia `api/bootstrap/app.php`, `api/config/sanctum.php`, `api/routes/api.php`, `AuthController` e `AuthService`. Explique por que o Controller passa tanto `$request->validated()` quanto `$request` ao Service, como `Auth::guard('web')->attempt()` valida as credenciais e como `regenerate()`, `invalidate()` e `regenerateToken()` afetam a sessão no login e no logout. Mostre o papel de `statefulApi()`, `auth:sanctum`, `RequireFrontendSession` e `admin`. Diferencie o cookie de sessão, o cookie `XSRF-TOKEN` e o cabeçalho `X-XSRF-TOKEN`.
+>
+> Termine com o fluxo no Thunder Client usando o proxy em `http://localhost`. Percorra `/sanctum/csrf-cookie`, `/api/login`, `/api/me`, `/api/logout` e `/api/me` após sair. Explique quais cookies e cabeçalhos enviar e em que situações aparecem 401, 403, 419 e 422. Use o resultado de `/api/users` para mostrar a diferença entre visitante, cliente e administrador.
+
+Para pedir novamente, use esta frase.
+
+> Explique a sintaxe dos Services e do Sanctum seguindo o prompt em `docs/gpt.md`.
+
 ## Mensagem sugerida para retomar
 
 > Leia docs/gpt.md, docs/README.md, docs/data-model.md, docs/migrations.md, docs/seeders.md, docs/crud-catalog.md e docs/crud-products.md. As etapas 1 a 5 e os quatro CRUDs básicos do catálogo estão concluídos. Os fluxos de contas, endereços, carrinho e pedidos ainda estão pendentes. Explique em português, comente o código e respeite uma etapa por vez. Quero entender todas as requisições e respostas de pelo menos um exemplo, do início ao fim. Espere eu dizer “próximo” antes de outra etapa. Resources e FormRequests ficam para a etapa 7; Sanctum e permissões para a etapa 8.
