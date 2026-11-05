@@ -125,6 +125,6 @@ As gravações dos testes ocorreram somente no SQLite em memória. Não foram ex
 - [ ] Consultar um produto e conferir os relacionamentos sem `pivot`.
 - [ ] Excluir uma classificação sem vínculos e receber 204 sem corpo.
 
-O próximo passo é a etapa 9 (Vue), somente quando o usuário solicitar.
+O próximo passo é a etapa 9 (telas em HTML, JavaScript, CSS e Bootstrap), somente quando o usuário solicitar.
 
 Referências: [FormRequests](https://laravel.com/docs/12.x/validation#form-request-validation) e [API Resources](https://laravel.com/docs/12.x/eloquent-resources).

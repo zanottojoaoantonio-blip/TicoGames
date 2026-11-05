@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="TicoGames: prévia visual de uma loja de jogos e consoles.">
+    <meta name="theme-color" content="#0b3d91">
+    <title>PlayStation 5 Slim | TicoGames</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous" defer></script>
+    <script src="assets/js/main.js" defer></script>
+  </head>
+  <body class="">
+    <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+    <header class="store-header sticky-top">
+
+<nav class="navbar navbar-expand-lg py-3" aria-label="Navegação principal">
+        <div class="container gap-3">
+          <a href="index.html" class="store-brand" aria-label="TicoGames, início"><i class="bi bi-controller " aria-hidden="true"></i><span>Tico<span>Games</span><small>TECNOLOGIA. PLAY. REPEAT.</small></span></a>
+          <div class="header-tools d-flex align-items-center gap-2 order-lg-3">
+            <a class="account-link d-none d-lg-flex align-items-center gap-2" href="login.html"><i class="bi bi-person-circle " aria-hidden="true"></i><span><small>Boas-vindas!</small><strong>Entrar ou cadastrar</strong></span></a>
+            <button type="button" class="btn header-icon d-lg-none" data-bs-toggle="collapse" data-bs-target="#header-search" aria-expanded="false" aria-controls="header-search" aria-label="Abrir pesquisa"><i class="bi bi-search " aria-hidden="true"></i></button>
+            <button type="button" class="btn header-icon position-relative ms-lg-3" data-bs-toggle="offcanvas" data-bs-target="#mini-cart" aria-controls="mini-cart" aria-label="Abrir prévia do carrinho, dois itens ilustrativos"><i class="bi bi-bag " aria-hidden="true"></i><span class="cart-badge">2</span></button>
+            <button type="button" class="btn header-icon d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#mobile-menu" aria-controls="mobile-menu" aria-label="Abrir menu"><i class="bi bi-list " aria-hidden="true"></i></button>
+          </div>
+<div class="collapse navbar-collapse header-search order-3 order-lg-2" id="header-search">
+            <div class="input-group"><label for="site-search" class="visually-hidden">Pesquisar produtos</label><input id="site-search" type="search" class="form-control border-0" placeholder="Encontre seu próximo jogo ou console" autocomplete="off"><button type="button" class="btn search-button" aria-label="Pesquisar produtos" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Prévia visual" data-preview-text="O campo de busca faz parte do layout. A pesquisa será implementada depois." data-preview-confirm="Entendi"><i class="bi bi-search " aria-hidden="true"></i></button>
+</div>
+</div>
+</div>
+</nav>
+<div class="category-nav d-none d-lg-block">
+        <nav class="container d-flex align-items-center gap-4" aria-label="Navegação do catálogo">
+          <a href="index.html#catalogo" class="category-link"><i class="bi bi-grid me-2" aria-hidden="true"></i> Catálogo</a>
+          <a href="index.html#catalogo" class="category-link">Games</a>
+        </nav>
+      </div>
+</header>
+<div class="offcanvas offcanvas-start" tabindex="-1" id="mobile-menu" aria-labelledby="mobile-menu-title">
+<div class="offcanvas-header border-bottom"><h2 class="offcanvas-title fs-5 fw-bold" id="mobile-menu-title">Explore a TicoGames</h2><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar menu"></button>
+</div>
+<div class="offcanvas-body p-0"><a href="login.html" class="mobile-account d-flex gap-3 p-4 text-decoration-none"><i class="bi bi-person-circle fs-2" aria-hidden="true"></i><span class="fw-semibold">Seu próximo nível começa aqui<small class="d-block fw-normal mt-1">Entre ou crie sua conta</small></span></a>
+<div class="list-group list-group-flush"><a class="list-group-item list-group-item-action py-3 d-flex align-items-center gap-3" href="index.html#catalogo"><i class="bi bi-controller " aria-hidden="true"></i>Games<i class="bi bi-chevron-right ms-auto small" aria-hidden="true"></i></a><a class="list-group-item list-group-item-action py-3" href="carrinho.html"><i class="bi bi-bag me-2" aria-hidden="true"></i> Meu carrinho</a><a class="list-group-item list-group-item-action py-3" href="admin.html"><i class="bi bi-sliders me-2" aria-hidden="true"></i> Administração visual</a>
+</div>
+</div>
+</div>
+<main class="container page-content" id="main-content" tabindex="-1">
+<nav aria-label="Caminho da página"><ol class="breadcrumb small mb-4">
+<li class="breadcrumb-item"><a href="index.html">Início</a>
+</li>
+<li class="breadcrumb-item active" aria-current="page">PlayStation 5 Slim</li>
+</ol>
+</nav>
+<div class="row g-4 g-xl-5 align-items-start">
+<div class="col-lg-7">
+<div class="product-gallery rounded-3 border bg-white"><span class="badge gallery-label">TICO SELECT</span>
+<div id="product-gallery" class="carousel slide" aria-label="Ilustrações do produto">
+<div class="carousel-inner">
+<div class="carousel-item active"><svg class="device-art " viewBox="0 0 600 440" role="img" aria-label="Ilustração de console e controle PlayStation 5"><use href="assets/images/devices.svg#console"></use></svg>
+</div>
+<div class="carousel-item"><svg class="device-art gallery-closeup" viewBox="0 0 600 440" role="img" aria-label="Ilustração de detalhe ilustrativo do console"><use href="assets/images/devices.svg#console"></use></svg>
+</div>
+<div class="carousel-item"><svg class="device-art gallery-angle" viewBox="0 0 600 440" role="img" aria-label="Ilustração de segunda composição ilustrativa do console"><use href="assets/images/devices.svg#console"></use></svg>
+</div>
+</div>
+</div>
+</div>
+<div class="d-flex gap-3 mt-3 gallery-thumbnails" aria-label="Miniaturas do produto"><button type="button" class="btn gallery-thumbnail" data-bs-target="#product-gallery" data-bs-slide-to="0" aria-label="Ver composição completa"><svg class="device-art " viewBox="0 0 600 440" role="img" aria-label="Ilustração de composição completa"><use href="assets/images/devices.svg#console"></use></svg></button><button type="button" class="btn gallery-thumbnail" data-bs-target="#product-gallery" data-bs-slide-to="1" aria-label="Ver detalhe do console"><svg class="device-art gallery-closeup" viewBox="0 0 600 440" role="img" aria-label="Ilustração de detalhe do console"><use href="assets/images/devices.svg#console"></use></svg></button><button type="button" class="btn gallery-thumbnail" data-bs-target="#product-gallery" data-bs-slide-to="2" aria-label="Ver outra composição"><svg class="device-art gallery-angle" viewBox="0 0 600 440" role="img" aria-label="Ilustração de outra composição"><use href="assets/images/devices.svg#console"></use></svg></button><small class="text-secondary align-self-center ms-auto">Imagens ilustrativas</small>
+</div>
+</div>
+<div class="col-lg-5"><p class="eyebrow mb-2">GAMES / CONSOLES</p><h1 class="detail-title">PlayStation 5 Slim, 1 TB,<br class="d-none d-xl-block"> com controle sem fio</h1><p class="product-rating mt-3"><span aria-label="Avaliação ilustrativa: 5 de 5 estrelas"><i class="bi bi-star-fill " aria-hidden="true"></i><i class="bi bi-star-fill " aria-hidden="true"></i><i class="bi bi-star-fill " aria-hidden="true"></i><i class="bi bi-star-fill " aria-hidden="true"></i><i class="bi bi-star-fill " aria-hidden="true"></i></span><small>Avaliação de demonstração</small></p><p class="text-secondary small">Mais espaço para novas histórias. Conheça a próxima geração da sua experiência de jogo.</p>
+<div class="purchase-panel rounded-3 p-4 mt-4">
+<div class="d-flex justify-content-between align-items-center mb-3"><span class="stock-tag"><i class="bi bi-check-circle me-1" aria-hidden="true"></i> Em estoque</span><span class="badge discount-badge position-static">-13%</span>
+</div>
+<del class="old-price">R$ 3.999,90</del><p class="detail-price mb-0">R$ <strong>3.499,90</strong></p><p class="payment-note">à vista · ou 10x de R$ 349,99 sem juros</p>
+<div class="d-flex gap-3 mt-4">
+<div><label class="visually-hidden" for="product-quantity">Quantidade</label><input id="product-quantity" class="form-control quantity-input" type="number" min="1" max="99" value="1">
+</div>
+<button class="btn btn-accent flex-grow-1" type="button" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Adicionar ao carrinho" data-preview-text="Este é o visual da compra. Nenhum item será adicionado ou salvo no carrinho." data-preview-confirm="Entendi"><i class="bi bi-bag me-2" aria-hidden="true"></i> Adicionar ao carrinho</button>
+</div>
+<p class="small text-secondary mt-3 mb-0"><i class="bi bi-shield-check me-1" aria-hidden="true"></i> Prévia visual · sem transação ou gravação de dados</p>
+</div>
+<div class="delivery-panel mt-4"><label for="product-cep" class="form-label"><i class="bi bi-truck me-2" aria-hidden="true"></i> Consulte a entrega</label>
+<div class="input-group"><input id="product-cep" class="form-control" inputmode="numeric" maxlength="9" placeholder="00000-000"><button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Prévia visual" data-preview-text="O cálculo de entrega será implementado depois. Nenhum CEP é consultado." data-preview-confirm="Entendi">Calcular</button>
+</div>
+</div>
+</div>
+</div>
+<section class="surface-panel mt-5">
+<ul class="nav nav-tabs px-3 pt-3" id="product-tabs" role="tablist">
+<li class="nav-item" role="presentation"><button class="nav-link active" id="description-tab" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#description-panel" aria-controls="description-panel" aria-selected="true">Descrição</button>
+</li>
+<li class="nav-item" role="presentation"><button class="nav-link" id="specifications-tab" type="button" role="tab" data-bs-toggle="tab" data-bs-target="#specifications-panel" aria-controls="specifications-panel" aria-selected="false">Especificações</button>
+</li>
+</ul>
+<div class="tab-content p-4">
+<div class="tab-pane fade show active" id="description-panel" role="tabpanel" aria-labelledby="description-tab" tabindex="0"><h2 class="h5 fw-bold mb-3">A próxima fase começa no seu setup.</h2><p class="text-secondary">Explore novas histórias com o PlayStation 5 Slim. O conjunto ilustrativo desta página inclui console com armazenamento de 1 TB e controle sem fio.</p><p class="small text-secondary mb-0">As imagens, características e condições comerciais são exemplos para revisão do design.</p>
+</div>
+<div class="tab-pane fade" id="specifications-panel" role="tabpanel" aria-labelledby="specifications-tab" tabindex="0"><h2 class="visually-hidden">Especificações ilustrativas</h2><dl class="row mb-0"><dt class="col-5 col-md-3">Plataforma</dt><dd class="col-7 col-md-9">PlayStation 5</dd><dt class="col-5 col-md-3">Armazenamento</dt><dd class="col-7 col-md-9">1 TB</dd><dt class="col-5 col-md-3">Conteúdo</dt><dd class="col-7 col-md-9">Console e controle sem fio (exemplo)</dd></dl>
+</div>
+</div>
+</section>
+<section class="store-section" aria-labelledby="related-title"><div class="section-heading"><h2 id="related-title">Também combina com você</h2></div><div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-4">        <div class="col">
+          <article class="card product-card h-100">
+            <div class="product-media"><svg class="device-art" viewBox="0 0 600 440" role="img" aria-label="Ilustração de Elden Ring"><use href="assets/images/devices.svg#game"></use></svg></div>
+            <div class="card-body d-flex flex-column p-3 p-xl-4">
+              <span class="product-category">Jogos · Destaques</span>
+              <h3 class="product-title">Elden Ring</h3>
+              <p class="platform-name">PlayStation 5</p>
+              <div class="mt-auto">
+                <p class="stock-tag mb-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i> Em estoque</p>
+                <p class="product-price mb-0">R$ <strong>299,90</strong></p>
+                <p class="payment-note">Preço ilustrativo</p>
+                <button class="btn btn-accent w-100" type="button" aria-label="Prévia de comprar Elden Ring para PlayStation 5" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Sua próxima escolha" data-preview-text="Esta é uma prévia visual de Elden Ring para PlayStation 5. Nenhum item será adicionado ao carrinho." data-preview-confirm="Entendi"><i class="bi bi-bag me-2" aria-hidden="true"></i> Comprar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card product-card h-100">
+            <div class="product-media"><svg class="device-art" viewBox="0 0 600 440" role="img" aria-label="Ilustração de Elden Ring"><use href="assets/images/devices.svg#game"></use></svg></div>
+            <div class="card-body d-flex flex-column p-3 p-xl-4">
+              <span class="product-category">Jogos</span>
+              <h3 class="product-title">Elden Ring</h3>
+              <p class="platform-name">Xbox Series</p>
+              <div class="mt-auto">
+                <p class="stock-tag mb-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i> Em estoque</p>
+                <p class="product-price mb-0">R$ <strong>279,90</strong></p>
+                <p class="payment-note">Preço ilustrativo</p>
+                <button class="btn btn-accent w-100" type="button" aria-label="Prévia de comprar Elden Ring para Xbox Series" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Sua próxima escolha" data-preview-text="Esta é uma prévia visual de Elden Ring para Xbox Series. Nenhum item será adicionado ao carrinho." data-preview-confirm="Entendi"><i class="bi bi-bag me-2" aria-hidden="true"></i> Comprar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card product-card h-100">
+            <div class="product-media"><svg class="device-art" viewBox="0 0 600 440" role="img" aria-label="Ilustração de Mario Kart 8 Deluxe"><use href="assets/images/devices.svg#game"></use></svg></div>
+            <div class="card-body d-flex flex-column p-3 p-xl-4">
+              <span class="product-category">Jogos · Destaques</span>
+              <h3 class="product-title">Mario Kart 8 Deluxe</h3>
+              <p class="platform-name">Nintendo Switch</p>
+              <div class="mt-auto">
+                <p class="stock-tag mb-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i> Em estoque</p>
+                <p class="product-price mb-0">R$ <strong>329,90</strong></p>
+                <p class="payment-note">Preço ilustrativo</p>
+                <button class="btn btn-accent w-100" type="button" aria-label="Prévia de comprar Mario Kart 8 Deluxe para Nintendo Switch" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Sua próxima escolha" data-preview-text="Esta é uma prévia visual de Mario Kart 8 Deluxe para Nintendo Switch. Nenhum item será adicionado ao carrinho." data-preview-confirm="Entendi"><i class="bi bi-bag me-2" aria-hidden="true"></i> Comprar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div class="col">
+          <article class="card product-card h-100">
+            <div class="product-media"><svg class="device-art" viewBox="0 0 600 440" role="img" aria-label="Ilustração de The Legend of Zelda: Tears of the Kingdom"><use href="assets/images/devices.svg#game"></use></svg></div>
+            <div class="card-body d-flex flex-column p-3 p-xl-4">
+              <span class="product-category">Jogos</span>
+              <h3 class="product-title">The Legend of Zelda: Tears of the Kingdom</h3>
+              <p class="platform-name">Nintendo Switch</p>
+              <div class="mt-auto">
+                <p class="stock-tag mb-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i> Em estoque</p>
+                <p class="product-price mb-0">R$ <strong>359,90</strong></p>
+                <p class="payment-note">Preço ilustrativo</p>
+                <button class="btn btn-accent w-100" type="button" aria-label="Prévia de comprar The Legend of Zelda: Tears of the Kingdom para Nintendo Switch" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Sua próxima escolha" data-preview-text="Esta é uma prévia visual de The Legend of Zelda: Tears of the Kingdom para Nintendo Switch. Nenhum item será adicionado ao carrinho." data-preview-confirm="Entendi"><i class="bi bi-bag me-2" aria-hidden="true"></i> Comprar</button>
+              </div>
+            </div>
+          </article>
+        </div></div></section>
+</main>
+<footer class="site-footer mt-5">
+      <div class="container">
+        <div class="newsletter row g-4 align-items-center">
+<div class="col-lg-6"><span class="eyebrow">FIQUE NO JOGO</span><h2 class="h3 fw-bold mt-2 mb-2">Novidades que valem o upgrade.</h2><p class="mb-0 small">Uma seleção de tecnologia para inspirar o seu próximo passo.</p>
+</div>
+<div class="col-lg-6"><label for="newsletter-email" class="form-label small">Seu e-mail</label>
+<div class="input-group"><input type="email" id="newsletter-email" class="form-control" placeholder="voce@exemplo.com" autocomplete="off"><button type="button" class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Prévia visual" data-preview-text="Este é o visual da newsletter. Nenhum e-mail será cadastrado." data-preview-confirm="Entendi">Quero receber <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></button>
+</div>
+</div>
+</div>
+<div class="row g-4 footer-main">
+<div class="col-lg-4"><a class="store-brand" href="index.html"><i class="bi bi-controller " aria-hidden="true"></i><span>Tico<span>Games</span></span></a><p class="mt-3 mb-3 small footer-description">Mais tecnologia. Mais possibilidades.<br>O próximo nível é com você.</p>
+
+</div>
+<div class="col-lg-8">
+<div class="accordion accordion-flush row footer-groups" id="footer-groups">
+<div class="col-md-4 accordion-item"><h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#footer-group-0" aria-expanded="false" aria-controls="footer-group-0">A TicoGames</button></h3>
+<div id="footer-group-0" class="accordion-collapse collapse d-md-block">
+<ul class="footer-links list-unstyled mb-0">
+<li><button class="footer-link" type="button" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Nossa história" data-preview-text="Uma marca para quem joga, cria e explora novas possibilidades." data-preview-confirm="Entendi">Nossa história</button>
+</li>
+<li><button class="footer-link" type="button" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Trabalhe conosco" data-preview-text="Área institucional ilustrativa do novo site." data-preview-confirm="Entendi">Trabalhe conosco</button>
+</li>
+<li><a href="admin.html">Administração</a>
+</li>
+</ul>
+</div>
+</div>
+<div class="col-md-4 accordion-item"><h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#footer-group-1" aria-expanded="false" aria-controls="footer-group-1">Precisa de ajuda?</button></h3>
+<div id="footer-group-1" class="accordion-collapse collapse d-md-block">
+<ul class="footer-links list-unstyled mb-0">
+<li><button class="footer-link" type="button" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Central de atendimento" data-preview-text="Esta área de atendimento faz parte da prévia visual." data-preview-confirm="Entendi">Central de atendimento</button>
+</li>
+<li><button class="footer-link" type="button" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Entregas e devoluções" data-preview-text="Os prazos e as políticas serão definidos na próxima etapa." data-preview-confirm="Entendi">Entregas e devoluções</button>
+</li>
+<li><button class="footer-link" type="button" data-bs-toggle="modal" data-bs-target="#preview-modal" data-preview-title="Privacidade" data-preview-text="Nenhum dado é enviado ou armazenado por estas telas." data-preview-confirm="Entendi">Privacidade</button>
+</li>
+</ul>
+</div>
+</div>
+<div class="col-md-4 accordion-item"><h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#footer-group-2" aria-expanded="false" aria-controls="footer-group-2">Sua próxima escolha</button></h3>
+<div id="footer-group-2" class="accordion-collapse collapse d-md-block">
+<ul class="footer-links list-unstyled mb-0">
+<li><a href="index.html#catalogo">Catálogo</a>
+</li>
+<li><a href="index.html#catalogo">Jogos</a>
+</li>
+<li><a href="index.html#catalogo">Consoles</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="footer-bottom d-flex justify-content-between flex-wrap gap-3"><small>© 2026 TicoGames · Prévia visual · Produtos e preços ilustrativos</small>
+<div class="d-flex gap-2 align-items-center"><span class="small me-2">Pagamento</span><span class="payment-badge"><i class="bi bi-qr-code " aria-hidden="true"></i> Pix</span><span class="payment-badge"><i class="bi bi-credit-card " aria-hidden="true"></i> Cartão</span><span class="payment-badge"><i class="bi bi-upc " aria-hidden="true"></i> Boleto</span>
+</div>
+</div>
+</div>
+</footer>
+<div class="offcanvas offcanvas-end" tabindex="-1" id="mini-cart" aria-labelledby="mini-cart-title">
+<div class="offcanvas-header border-bottom"><h2 class="offcanvas-title fs-5 fw-bold" id="mini-cart-title">Seu carrinho <span class="badge text-bg-light ms-1">2</span></h2><button class="btn-close" type="button" data-bs-dismiss="offcanvas" aria-label="Fechar carrinho"></button>
+</div>
+<div class="offcanvas-body d-flex flex-column"><p class="small text-secondary">Uma prévia da sua próxima conquista.</p>
+<div class="mini-cart-item"><svg class="device-art " viewBox="0 0 600 440" role="img" aria-label="Ilustração de console e controle"><use href="assets/images/devices.svg#console"></use></svg>
+<div><span class="small text-secondary">GAMES</span><h3 class="fs-6 fw-semibold mt-1">PlayStation 5 Slim</h3><small class="text-secondary">Quantidade: 1</small><strong class="d-block mt-2">R$ 3.499,90</strong>
+</div>
+</div>
+<div class="mini-cart-item"><svg class="device-art " viewBox="0 0 600 440" role="img" aria-label="Ilustração de Elden Ring"><use href="assets/images/devices.svg#game"></use></svg>
+<div><span class="small text-secondary">GAMES</span><h3 class="fs-6 fw-semibold mt-1">Elden Ring para PlayStation 5</h3><small class="text-secondary">Quantidade: 1</small><strong class="d-block mt-2">R$ 299,90</strong>
+</div>
+</div>
+<div class="mt-auto pt-4">
+<div class="d-flex justify-content-between border-top pt-4 mb-4"><span>Subtotal</span><strong>R$ 3.799,80</strong>
+</div>
+<a class="btn btn-accent w-100" href="carrinho.html">Ver carrinho <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i></a><p class="text-center small text-secondary mt-3 mb-0">Itens ilustrativos. Sem gravação de dados.</p>
+</div>
+</div>
+</div>
+<div class="modal fade" id="preview-modal" tabindex="-1" aria-labelledby="preview-modal-title" aria-describedby="preview-modal-text" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-header"><h2 class="modal-title fs-5" id="preview-modal-title">Prévia visual</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Fechar"></button>
+</div>
+<div class="modal-body"><p id="preview-modal-text" class="mb-0"></p>
+</div>
+<div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Voltar</button><button type="button" class="btn btn-accent" id="preview-modal-confirm" data-bs-dismiss="modal">Entendi</button>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

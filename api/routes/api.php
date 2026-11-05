@@ -37,7 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('cart', [CartController::class, 'show']);
     Route::post('cart/items', [CartController::class, 'store']);
     Route::patch('cart/items/{id}', [CartController::class, 'update'])->whereNumber('id');
-    Route::delete('cart/items/{id}', [CartController::class, 'destroy'])->whereNumber('id');
+    Route::delete('car/items/{id}', [CartController::class, 'destroy'])->whereNumber('id');
     Route::delete('cart', [CartController::class, 'clear']);
     Route::post('cart/merge', [CartController::class, 'merge']);
 

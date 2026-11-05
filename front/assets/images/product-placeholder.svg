@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" role="img" aria-labelledby="title">
+  <title id="title">Imagem de demonstração do produto</title>
+  <!-- Fundo neutro para os exemplos; as fotos reais serão cadastradas depois. -->
+  <rect width="640" height="480" rx="24" fill="#f1f5f9"/>
+  <!-- Controle genérico de videogame, sem usar imagens de produtos reais. -->
+  <rect x="180" y="160" width="280" height="160" rx="64" fill="#334155"/>
+  <path d="M230 240h60m-30-30v60" stroke="#f1f5f9" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="385" cy="220" r="13" fill="#38bdf8"/>
+  <circle cx="415" cy="260" r="13" fill="#a78bfa"/>
+</svg>

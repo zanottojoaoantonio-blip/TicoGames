@@ -5,15 +5,15 @@ Integração de 03/11/2026: mantidos os fluxos autenticados do backend, as valid
 > FormRequests e Resources estão implementados. O contrato atual usa `data` nas respostas de sucesso; veja [requests-resources.md](requests-resources.md).
 
 
-Projeto final de curso: loja de jogos físicos e consoles, com backend Laravel, banco MySQL e frontend Vue.
+Projeto final de curso: loja de jogos físicos e consoles, com backend Laravel, banco MySQL e frontend em HTML, JavaScript, CSS e Bootstrap.
 
-## Etapa atual: 8 — backend autenticado
+## Etapa atual: 9 — visual do frontend
 
 O catálogo tem CRUD completo de produtos, categorias, plataformas e gêneros, com FormRequests e API Resources. Foram acrescentados os fluxos de contas, endereços, carrinho e pedidos, respeitando dono, estoque e histórico. Autenticação usa sessão/cookie com Sanctum, seguindo a aula indicada pelo usuário.
 
 Visitantes consultam os produtos ativos. Administradores modificam o catálogo e gerenciam contas. Clientes autenticados administram os próprios endereços, carrinho e pedidos. Pagamento é simulado; o estoque só diminui ao aceitar a confirmação, dentro de uma transação.
 
-A suíte atual passou com **45 testes e 684 asserções** em SQLite em memória. Sessão, CSRF e CORS foram verificados também por HTTP em um contêiner com SQLite temporário. O acesso a `/api/users` foi verificado pelo proxy: visitante recebe 401 JSON mesmo sem pedir JSON, cliente recebe 403 e administrador recebe 200. O Pint passou nos arquivos PHP alterados. A concorrência real dos bloqueios do MySQL não foi exercitada pela suíte SQLite.
+Na última verificação do backend, a suíte passou com **45 testes e 684 asserções** em SQLite em memória. Sessão, CSRF e CORS foram verificados também por HTTP em um contêiner com SQLite temporário. O acesso a `/api/users` foi verificado pelo proxy: visitante recebe 401 JSON mesmo sem pedir JSON, cliente recebe 403 e administrador recebe 200. O Pint passou nos arquivos PHP alterados. A concorrência real dos bloqueios do MySQL não foi exercitada pela suíte SQLite. Esses testes não foram repetidos para a entrega visual do frontend.
 
 Guias atuais:
 
@@ -23,7 +23,7 @@ Guias atuais:
 - [crud-catalog.md](crud-catalog.md) e [crud-products.md](crud-products.md): explicações e histórico da implementação do catálogo.
 - [data-model.md](data-model.md), [migrations.md](migrations.md) e [seeders.md](seeders.md): estrutura e carga inicial.
 
-A carga de demonstração permanece com usuários, endereços e produtos fictícios. As verificações automatizadas não criaram pedidos nem alteraram produtos no MySQL. O frontend Vue existe como projeto inicial em front/, mas suas telas e integração continuam para a etapa 9, somente após solicitação do usuário.
+A carga de demonstração permanece com usuários, endereços e produtos fictícios. Em 05/11/2026, a base Vue foi substituída por HTML, JavaScript, CSS e Bootstrap em `front/`. O frontend tem prévias visuais de catálogo, produto, carrinho, acesso/cadastro e administração. O catálogo está focado nos sete exemplos de jogos e consoles, sem banners, faixas promocionais, ofertas ou departamentos extras. O JavaScript abre modais de demonstração e leva ao formulário, sem integração com a API nem gravação de dados. Autenticação, operações do carrinho, pedidos e a integração serão trabalhados separadamente. Veja [o guia do frontend](../front/README.md).
 
 Para continuar em outro computador ou nova conversa, leia [gpt.md](gpt.md), que registra as decisões e resultados, incluindo o histórico das etapas anteriores.
 
@@ -32,12 +32,12 @@ Para continuar em outro computador ou nova conversa, leia [gpt.md](gpt.md), que 
 - **Composer:** instala as bibliotecas PHP nas versões registradas em `composer.lock`.
 - **Artisan:** ferramenta de comandos do Laravel, como gerar a chave da aplicação.
 - **`api/`:** código Laravel e Dockerfiles do FrankenPHP. O Compose usa `api/Dockerfile.dev` e monta o código local.
-- **`front/`:** projeto Vue compilado e servido pelo Nginx no serviço `frontend`.
-- **`proxy/`:** imagem Nginx que encaminha as requisições ao Vue ou à API.
-- **`.env`:** único arquivo de configuração local, na raiz, criado a partir de `api/.env.example`. O Compose lê as credenciais do MySQL e usa `env_file` para entregar as variáveis ao Laravel. O arquivo `api/.env.example` é apenas um modelo; não crie `api/.env`.
+- **`front/`:** HTML, JavaScript, CSS e Bootstrap, servidos diretamente pelo Nginx no serviço `frontend`, sem Node ou etapa de compilação.
+- **`proxy/`:** imagem Nginx que encaminha as requisições ao frontend ou à API.
+- **`.env`:** único arquivo de configuração local, na raiz, criado a partir de `.env.example`. O Compose lê as credenciais do MySQL e usa `env_file` para entregar as variáveis ao Laravel. O arquivo `.env.example` é apenas um modelo; não crie `api/.env`.
 - **Extensões PHP:** acrescentam recursos à linguagem. `pdo_mysql` permite conectar ao MySQL; `intl` fornece a formatação usada por comandos como `db:show`.
 
-O proxy atende em `http://localhost` e envia `/api`, `/sanctum`, `/up`, `/images` e `/storage` ao Laravel. Os demais caminhos vão para o Vue. O MySQL preserva os dados no volume `mysql_data` e aceita conexões locais em `127.0.0.1:3306`.
+O proxy atende em `http://localhost` e envia `/api`, `/sanctum`, `/up`, `/images` e `/storage` ao Laravel. Os demais caminhos vão para o frontend estático. O MySQL preserva os dados no volume `mysql_data` e aceita conexões locais em `127.0.0.1:3306`.
 
 ## Primeira inicialização
 
@@ -48,7 +48,7 @@ No Linux, com Bash:
 ```bash
 # Cria a configuração local sem sobrescrever um .env existente.
 if [ ! -f .env ]; then
-    cp api/.env.example .env
+    cp .env.example .env
 fi
 
 # Verifica o Compose sem mostrar as credenciais.
@@ -66,7 +66,7 @@ No Windows, abra o Docker Desktop e use o PowerShell:
 ```powershell
 # Cria a configuração local sem sobrescrever um .env existente.
 if (-not (Test-Path -LiteralPath .env)) {
-    Copy-Item -LiteralPath api/.env.example -Destination .env
+    Copy-Item -LiteralPath .env.example -Destination .env
 }
 
 # Valida o Compose sem mostrar as credenciais.
@@ -118,11 +118,11 @@ O Laravel recebe a configuração pelo ambiente do contêiner, sem um arquivo `/
 
 Ao mover ou copiar a pasta, use novamente `docker compose up -d --build --wait` na nova localização para atualizar a montagem. O comando preserva os volumes.
 
-Abra [http://localhost](http://localhost) para ver o Vue. A rota [http://localhost/up](http://localhost/up) verifica se o proxy alcança o Laravel. Para confirmar a conexão com o banco, use `docker compose exec api php artisan db:show`. Para testar login e cookies, siga o [guia de autenticação](authentication.md#testar-no-navegador).
+Abra [http://localhost](http://localhost) para ver o frontend. A rota [http://localhost/up](http://localhost/up) verifica se o proxy alcança o Laravel. Para confirmar a conexão com o banco, use `docker compose exec api php artisan db:show`. Para testar login e cookies, siga o [guia de autenticação](authentication.md#testar-no-navegador).
 
 ## Configuração escolhida
 
-O arquivo `api/.env.example` tem comentários explicando cada bloco.
+O arquivo `.env.example` tem comentários explicando cada bloco.
 
 | Configuração | Valor | Motivo |
 | --- | --- | --- |
@@ -178,10 +178,10 @@ docker compose up -d --wait
 docker compose stop
 ```
 
-O Nginx serve a versão compilada do Vue. Depois de editar arquivos em `front/`, reconstrua o serviço:
+O Nginx serve os arquivos HTML, CSS e JavaScript diretamente. O Bootstrap vem de um CDN e precisa de internet para carregar. Depois de editar arquivos em `front/`, atualize a imagem do serviço:
 
 ```powershell
-docker compose up -d --build --wait frontend
+docker compose up -d --build --no-deps --wait frontend
 ```
 
 ## Estrutura para as próximas etapas
@@ -192,6 +192,9 @@ docker compose up -d --build --wait frontend
 - `api/routes/web.php`: rotas web; por enquanto contém a página padrão.
 - `api/config/`: configurações do Laravel, que podem ler o `.env`.
 - `api/storage/`: arquivos gerados, sessões, cache e logs.
-- `front/`: projeto Vue separado do backend.
+- `front/index.html`: catálogo visual com pesquisa, filtros e sete produtos estáticos.
+- `front/admin.html`: tabela e formulário visual de produtos.
+- `front/assets/css/style.css`: estilos compartilhados e responsivos das duas telas.
+- `front/assets/js/main.js`: modais de demonstração e rolagem para o formulário, sem chamadas à API.
 
-A etapa 8 do backend está concluída. Aguardar solicitação antes de iniciar a etapa 9 (Vue). O fluxo atual de autenticação está em [authentication.md](authentication.md).
+A etapa 8 do backend está concluída. A etapa 9 tem o visual do catálogo e da administração de produtos; a integração com os dados e as outras telas continuam pendentes. O fluxo atual de autenticação está em [authentication.md](authentication.md).

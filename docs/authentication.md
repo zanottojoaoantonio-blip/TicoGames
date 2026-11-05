@@ -5,7 +5,7 @@ Implementada em 02/11/2026, seguindo os modelos da [Aula 2 — Laravel Sanctum](
 ## Retomada passo a passo
 
 1. O Composer instala o Sanctum 4.3.3 a partir do `composer.lock`. O projeto já possui rotas de API e usa a sessão do Laravel.
-2. `statefulApi()` prepara sessão e CSRF para a origem configurada. O proxy serve o Vue e encaminha as chamadas da API e do Sanctum na mesma origem, `http://localhost`.
+2. `statefulApi()` prepara sessão e CSRF para a origem configurada. O proxy serve o frontend e encaminha as chamadas da API e do Sanctum na mesma origem, `http://localhost`.
 3. `RequireFrontendSession` retorna 419 antes de cadastro ou login se a requisição não recebeu uma sessão. Com a sessão preparada, os FormRequests validam os campos, o AuthService autentica e o UserResource apresenta a conta.
 4. `auth:sanctum` exige uma conta conectada nas rotas privadas. O middleware `admin` exige o perfil administrativo nas escritas do catálogo e na gestão de contas.
 
@@ -24,7 +24,7 @@ O cookie `XSRF-TOKEN` tem outra função: seu valor vai no header `X-XSRF-TOKEN`
 | `AuthController` | Delega ao Service, usa `validated()`, devolve `UserResource`, status 201/200 e `Cache-Control: no-store` no cadastro e no login. |
 | `GET /api/me` | Retorna a conta autenticada, também com `no-store`. |
 | Rotas em `api/routes/api.php` | Cadastro/login públicos com `throttle:6,1`; `me` e `logout` no grupo `auth:sanctum`. |
-| `statefulApi()`, CORS e domínio stateful | Vue e Laravel compartilham `http://localhost` pelo proxy. O Sanctum reconhece `localhost` como stateful. |
+| `statefulApi()`, CORS e domínio stateful | Frontend e Laravel compartilham `http://localhost` pelo proxy. O Sanctum reconhece `localhost` como stateful. |
 
 Adaptações às regras já combinadas: o catálogo pode ser consultado por visitantes; somente administradores o modificam. `UserResource` inclui também `role` para a interface distinguir cliente e administrador. O cadastro público sempre usa o padrão `customer` do banco: `role` não é validado nem está em `$fillable`. O tutorial protege todo o catálogo e usa frontend na porta 80; essas duas escolhas não se aplicam à nossa loja.
 
@@ -32,7 +32,7 @@ Adaptações às regras já combinadas: o catálogo pode ser consultado por visi
 
 - `api/bootstrap/app.php`: ativa `statefulApi()` e registra o middleware `admin`.
 - `api/config/sanctum.php`: inclui os hosts e portas locais reconhecidos como frontend stateful.
-- `api/config/cors.php`: permite a origem exata do Vue, com credenciais.
+- `api/config/cors.php`: permite a origem exata do frontend, com credenciais.
 - `api/app/Http/Requests/RegisterRequest.php` e `LoginRequest.php`: validam a entrada.
 - `api/app/Services/AuthService.php`: cria conta e controla autenticação e sessão.
 - `api/app/Http/Controllers/Api/AuthController.php`: organiza o fluxo HTTP.
@@ -54,7 +54,7 @@ Adaptações às regras já combinadas: o catálogo pode ser consultado por visi
 
 ## Configuração local
 
-Os valores abaixo estão em `api/.env.example`, que é apenas o modelo. A configuração local fica somente no `.env` da raiz e chega ao Laravel pelo `env_file` do Compose. Ao migrar de uma configuração que usava as portas 5173 ou 8000 no navegador, atualize esse `.env` e aplique as alterações:
+Os valores abaixo estão em `.env.example`, que é apenas o modelo. A configuração local fica somente no `.env` da raiz e chega ao Laravel pelo `env_file` do Compose. Ao migrar de uma configuração que usava as portas 5173 ou 8000 no navegador, atualize esse `.env` e aplique as alterações:
 
 ```bash
 docker compose exec api php artisan config:clear
@@ -68,7 +68,7 @@ SANCTUM_STATEFUL_DOMAINS=localhost
 SESSION_SECURE_COOKIE=false
 ```
 
-No HTTP local, deixe `SESSION_DOMAIN` sem preencher e use `localhost` em todas as chamadas. No Vue, use URLs relativas, como `/api/me`, para passar pelo mesmo proxy. Em HTTPS de produção, `SESSION_SECURE_COOKIE` deve ser true.
+No HTTP local, deixe `SESSION_DOMAIN` sem preencher e use `localhost` em todas as chamadas. No JavaScript do frontend, use URLs relativas, como `/api/me`, para passar pelo mesmo proxy. Em HTTPS de produção, `SESSION_SECURE_COOKIE` deve ser true.
 
 ## Testar no navegador
 
@@ -128,4 +128,4 @@ Pelo novo proxy, a conta de demonstração passou pelo fluxo real: CSRF 204, log
 
 A suíte usou SQLite em memória. A verificação HTTP criou uma conta descartável em um arquivo SQLite temporário no contêiner. O banco MySQL do projeto ficou intacto.
 
-Os novos CRUDs e o fluxo de pedidos estão em [account-checkout.md](account-checkout.md). Próxima etapa: telas e integração Vue, somente após solicitação do usuário.
+Os novos CRUDs e o fluxo de pedidos estão em [account-checkout.md](account-checkout.md). Próxima etapa: telas e integração em HTML, JavaScript, CSS e Bootstrap, uma parte por vez.

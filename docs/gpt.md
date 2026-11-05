@@ -1,20 +1,56 @@
 # TicoGames — contexto para continuar o projeto
 
-Última atualização: 04/11/2026.
+Última atualização: 05/11/2026.
 
 ## Leia isto primeiro
 
 Este arquivo registra o contexto para continuar em outro computador ou conversa. Leia também `docs/data-model.md`, `docs/migrations.md`, `docs/seeders.md`, `docs/crud-catalog.md`, `docs/crud-products.md` e `docs/README.md`. Confira os arquivos atuais antes de alterar código. Os caminhos são relativos à raiz.
 
-**Estado atual. O usuário pediu a retomada da etapa 8 com explicações passo a passo. O Sanctum 4.3.3 foi reinstalado a partir do lock. O cadastro, o login, a consulta da conta e o logout usam sessão, cookie e CSRF. Os fluxos privados voltaram à API com autenticação, e as operações administrativas exigem perfil admin. A suíte passou com 45 testes e 684 asserções. O acesso sem autenticação à API retorna 401 JSON mesmo sem o header Accept, corrigindo o erro 500 em /api/users. O Vue segue para a etapa 9 quando solicitado.**
+**Estado atual. O backend autenticado da etapa 8 está implementado; o último resultado registrado da suíte é de 45 testes e 684 asserções. O frontend estático usa HTML, CSS, Bootstrap, Bootstrap Icons e Inter, sem npm ou compilação. Existem prévias visuais de catálogo, produto, carrinho, acesso/cadastro e administração. O usuário reforçou que o foco é o design e pediu desfazer os arquivos JS de dados, carrinho e autenticação que haviam sido iniciados; esses arquivos foram removidos. O JavaScript local continua limitado aos avisos visuais e à rolagem para o formulário. Nenhuma tela chama a API ou persiste dados. O catálogo está novamente focado nos sete exemplos de jogos e consoles.**
 
-O Compose segue a estrutura do projeto de referência. O Laravel roda com FrankenPHP no serviço `api` em `api/`, o Vue fica em `front/` e o Nginx de entrada em `proxy/`. O endereço público é `http://localhost`. As referências a `php`, `front-end/` e às portas 5173 e 8000 no navegador nos relatos abaixo descrevem configurações anteriores. Os passos atuais estão em [README.md](README.md) e [authentication.md](authentication.md).
+O Laravel roda com FrankenPHP no serviço `api` em `api/`, o frontend estático fica em `front/` e o Nginx de entrada em `proxy/`. O endereço público é `http://localhost`. As referências a Vue, `php`, `front-end/` e às portas 5173 e 8000 no navegador nos relatos abaixo descrevem configurações anteriores. Os passos atuais estão em [README.md](README.md) e [authentication.md](authentication.md).
 
 O usuário pediu: “pode fazer todos os crud e me explique os depois pode ser somente 1 mas todos as requisições e suas respectivas respostas desde onde ela inicia até onde termina”. Foram completados os quatro CRUDs do catálogo definidos nesta conversa e explicado produtos do início ao fim. Ele usa Thunder Client; a imagem anterior tinha `www.localhost` e um header Accept incorreto. Orientar `http://localhost:8000/api/products`, sem `www`, e `Accept: application/json`. Não alterar o backend para compensar erros de preenchimento.
 
-O usuário detalhou o fluxo visual do carrinho, mas esclareceu em seguida: “Não, vamos seguir os passos ja delimitados”. Esse fluxo fica planejado para a etapa 9; não implementar o frontend agora. A preparação iniciada não criou telas. O usuário pediu manter `front-end/package-lock.json`; o arquivo foi restaurado e conferido com `package.json`.
+O usuário detalhou o fluxo visual do carrinho, mas pediu seguir uma etapa por vez. Esse fluxo continua planejado para a etapa 9. A migração inicial de 05/11/2026 substituiu somente a estrutura; a autorização posterior criou apenas o visual de catálogo e administração de produtos. O antigo pedido de manter o lock do Vue pertence ao histórico anterior à escolha de um frontend sem npm.
 
 Ao concluir uma etapa, atualize este arquivo com o que mudou, o que foi verificado e qual é o próximo passo. Registre limitações sem apresentar funcionalidades planejadas como já implementadas.
+
+## Simplificação do design — 05/11/2026
+
+- Após o pedido de design, preparadas também as páginas estáticas `produto.html`, `carrinho.html` e `login.html`. Galeria, abas e menus usam os componentes visuais do Bootstrap. Login, cadastro, carrinho e checkout são somente layouts; não executam operações.
+- O usuário pediu remover a faixa superior promocional, todos os banners da home, a faixa de benefícios, ofertas, os departamentos de hardware/periféricos/monitores/notebooks/celulares e as redes sociais do rodapé. Essas remoções foram aplicadas às cinco páginas, incluindo o menu do celular e os links correspondentes.
+- Catálogo consolidado nos sete exemplos de jogos e consoles. Relacionados, minicarrinho e carrinho visual também usam jogos e consoles. As ilustrações são locais e os valores são exemplos fixos.
+- Removidos `front/js/data.js`, `front/js/cart.js` e `front/js/auth.js`, antes de qualquer uso nas páginas. Mantido sem alterações o pequeno script visual de `front/assets/js/main.js`.
+- Verificado nesta simplificação: cinco páginas e assets locais respondem HTTP 200; trechos removidos ausentes do HTML, inclusive nos menus mobile; referências locais, IDs e labels válidos. Conferidas as cinco telas em 1440 e 390 px, sem transbordamento da página, com os campos dentro da largura disponível e rolagem própria da tabela administrativa. Menu mobile mostra Games, carrinho e administração. Console sem erros ou avisos na conferência final do catálogo.
+- Somente o frontend foi reconstruído. `.env`, `compose.yaml`, a alteração prévia em `api/routes/api.php` e o script visual foram preservados por comparação. Não foram executados testes PHP, migrations, seeders nem comandos no MySQL.
+- O próximo passo continua sendo revisar o design junto com o usuário. Não antecipar lógica de aplicação, localStorage, autenticação ou integração com o Laravel.
+
+## Visual do catálogo e da administração — 05/11/2026
+
+- Plano aprovado: `front/index.html` para o catálogo e `front/admin.html` para a administração de produtos, inspirados na organização da KaBuM!, com a marca TicoGames, cabeçalho azul e destaques laranja.
+- Sete produtos de exemplo correspondentes aos seeders, escritos no HTML. Imagem ilustrativa existente copiada para `front/assets/images/`, sem dependência do backend para exibir as páginas.
+- Catálogo com pesquisa e dois filtros rotulados, cards responsivos (4/2/1 colunas) e botões de compra. Pesquisa e filtros não alteram a listagem.
+- Administração com tabela de nome, plataforma, categorias, preço, estoque, status e ações; formulário sempre visível com nome, descrição, imagem, preço, estoque, plataforma, categorias, gêneros opcionais e ativo. A tabela rola horizontalmente no celular.
+- O usuário esclareceu: “pode usar js para visual só n faça a ligação com o back nesse momento”. `main.js` apenas preenche o modal de demonstração e rola até o formulário. Comprar/desativar/salvar não executam operações; confirmar fecha o modal. Editar não carrega dados nem altera os exemplos.
+- Não há elemento HTML `form`, submissão, `fetch`, armazenamento local, autenticação, carrinho ou pedidos. Selects e checkboxes têm valores ilustrativos, ainda sem os IDs vindos da API.
+- CSS e JS compartilhados; Bootstrap 5.3.8 por CDN com SRI, requerendo internet. Dockerfile atualizado para servir também `admin.html`.
+- Verificado: somente o serviço `frontend` reconstruído e saudável; páginas e assets locais com HTTP 200 e conteúdo correspondente aos arquivos; asset inexistente com 404. Catálogo conferido em 1440, 768 e 390 px (4/2/1 colunas); administração em desktop e celular, incluindo 320 px, sem transbordamento da página. A rolagem horizontal fica dentro da tabela e os campos cabem no celular.
+- Navegação entre páginas, âncora Novo produto, rolagem de Editar e modais de comprar/salvar/desativar conferidos no navegador. Pesquisa e filtros preservam os sete cards; confirmar desativação preserva sete registros ativos; Enter nos campos não submete dados. Sem erros ou avisos no console durante essa conferência. Sintaxe JS, IDs únicos, labels, textos alternativos, caminhos locais e `git diff --check` aprovados.
+- `.env`, `compose.yaml` e a edição anterior em `api/routes/api.php` preservados, conferidos por hash. Não foram executados testes PHP, migrations, seeders ou comandos no MySQL nesta entrega visual.
+- Próximo passo: revisar o visual com o usuário e trabalhar juntos no JavaScript da aplicação, somente após autorização para integrar com o backend. Não antecipar login, carrinho, pedidos ou outros cadastros.
+
+## Migração da base do frontend — 05/11/2026
+
+- Pedido: substituir Vue por HTML, JavaScript puro, CSS e Bootstrap. O usuário reforçou “é só para arrumar a estrutura não fazer”: a interface iniciada foi retirada, deixando somente HTML base vazio e arquivos CSS/JS reservados.
+- Removidos os arquivos `.vue`, o ponto de entrada do Vue, a configuração Vite, os manifests npm, o alias de imports e a recomendação do editor para Vue.
+- Na conferência da estrutura, removidos também os diretórios vazios restantes `front/src`, `front/public` e `front/.vscode`. Mantidos os diretórios de storage do Laravel com `.gitignore`, que reservam os caminhos de arquivos privados/públicos e testes.
+- Removida a pasta `vendor` vazia da raiz. `api/vendor` permanece como destino do volume `api_vendor` no Docker. As pastas locais `.agents`, `.codex` e `.aws` também foram removidas quando vazias, mas reapareceram vazias na execução seguinte das ferramentas; não são dependências do frontend nem do Laravel.
+- `front/index.html` carrega Bootstrap 5.3.8 por CDN, com SRI, seguido do CSS e JavaScript locais em `front/assets/`. O CDN precisa de internet. Os arquivos locais contêm apenas comentários; nenhuma lógica ou personalização visual foi implementada.
+- `front/Dockerfile` copia HTML e assets diretamente para o Nginx, sem estágio Node. O Nginx responde 404 para arquivos e caminhos inexistentes, sem fallback de SPA. O upstream do proxy passou de `vue` para `storefront`; os caminhos da API permanecem no Laravel.
+- A configuração e as instruções atuais usam o modelo `.env.example` da raiz. Não modificar o `.env` local nem executar migrations/seeders para essa migração.
+- Já existia uma edição do usuário em `api/routes/api.php`, trocando a rota DELETE `cart/items/{id}` por `car/items/{id}`. Essa edição não faz parte da migração e foi preservada.
+- Verificado: imagens do frontend/proxy reconstruídas e saudáveis; HTML/CSS/JS respondem 200; o HTML servido está sem elementos ou texto de interface no corpo; CSS e JS locais contêm somente comentários; sintaxe JavaScript e `git diff --check` aprovados. Os caminhos inexistentes retornaram 404 e o proxy respondeu 200 em `/up` e `/api/products`. Não foram executados testes PHP, migrations ou seeders nesta migração. A prévia temporária foi fechada após a correção de escopo.
 
 ## Correção do acesso sem autenticação — 04/11/2026
 
@@ -129,7 +165,7 @@ E-commerce de jogos físicos e consoles chamado **TicoGames**.
 - Backend: Laravel 12; a instalação verificada está na versão **12.70.2**.
 - Banco: MySQL 8.4.
 - Ambiente: Docker e Docker Compose.
-- Frontend: Vue, com Vite, na pasta `front-end/`.
+- Frontend: HTML, JavaScript puro, CSS e Bootstrap 5.3.8, na pasta `front/`.
 - Autenticação: Laravel Sanctum por sessão e cookie na etapa 8.
 - Ambiente de origem: Windows com PowerShell. Os caminhos locais e os processos não são transferidos só por copiar este arquivo.
 - A revisão das etapas 1 a 4 ocorreu também em Linux com Bash, na pasta `/home/joaoantonio/TicoGames`. A etapa 5 foi executada no Windows com PowerShell, em `C:\Users\Pichau\TicoGames`. `docs/README.md` tem instruções para Linux e Windows.
@@ -146,7 +182,7 @@ E-commerce de jogos físicos e consoles chamado **TicoGames**.
 | 6 | CRUD básico: Controllers e Services | Catálogo concluído; fluxos de contas, endereços, carrinho e pedidos completados junto à etapa 8. |
 | 7 | CRUD completo: Resources e FormRequests | Concluída: 23 testes aprovados, 369 asserções; Pint aplicado. |
 | 8 | Registro, login e sessão | Concluída com Sanctum. |
-| 9 | Frontend: login/registro, catálogo, administração, carrinho, pagamento simulado e status | Pendente. |
+| 9 | Frontend: login/registro, catálogo, administração, carrinho, pagamento simulado e status | Catálogo e administração de produtos visuais em HTML, CSS, Bootstrap e JS de apresentação; integração e demais telas pendentes. |
 
 ## Regras de negócio definidas
 
@@ -345,7 +381,7 @@ Com Docker Desktop aberto, execute no PowerShell, na raiz do projeto:
 ```powershell
 # Cria o arquivo local somente se ele ainda não existir.
 if (-not (Test-Path -LiteralPath .env)) {
-    Copy-Item -LiteralPath api/.env.example -Destination .env
+    Copy-Item -LiteralPath .env.example -Destination .env
 }
 
 # Prepara todos os serviços e substitui os contêineres antigos.

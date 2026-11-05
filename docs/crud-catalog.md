@@ -124,4 +124,4 @@ Os testes estão em `api/tests/Feature/CatalogApiTest.php` e `api/tests/Feature/
 - [ ] Tentar excluir uma classificação utilizada e conferir 422, sem perda de dados.
 - [ ] Repetir o ciclo de produtos do outro guia, incluindo desativação e consulta posterior.
 
-Os fluxos de contas, endereços, carrinho e pedidos foram integrados com o commit remoto e estão descritos em `account-checkout.md`. A próxima etapa é o Vue, somente quando solicitado.
+Os fluxos de contas, endereços, carrinho e pedidos foram integrados com o commit remoto e estão descritos em `account-checkout.md`. A próxima etapa são as telas em HTML, JavaScript, CSS e Bootstrap, somente quando solicitado.
