@@ -1,6 +1,7 @@
 <?php
 
 // Organiza esta classe no grupo de Models da aplicação.
+
 namespace App\Models;
 
 // Importa a base do Eloquent e os tipos dos relacionamentos usados pelo produto.
@@ -19,6 +20,7 @@ class Product extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'category_id',
         'platform_id', // Plataforma desta versão do produto.
         'name', // Nome do jogo ou console.
         'description', // Informações sobre o produto.
@@ -43,11 +45,9 @@ class Product extends Model
         ];
     }
 
-    // Um produto pode ter várias categorias, e uma categoria reúne vários produtos.
-    // Por convenção, o Eloquent usa category_product com category_id e product_id.
-    public function categories(): BelongsToMany
+    public function category(): BelongsTo
     {
-        return $this->belongsToMany(Category::class);
+        return $this->belongsTo(Category::class);
     }
 
     // Cada produto pertence a uma plataforma.

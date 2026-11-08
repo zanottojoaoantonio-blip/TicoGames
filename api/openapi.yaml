@@ -1,0 +1,4244 @@
+openapi: 3.0.3
+info:
+  title: 'TicoGames API'
+  version: 1.1.0
+  description: 'Autenticação por cookies Sanctum. Execute GET /sanctum/csrf-cookie antes de escrever. O Swagger envia X-XSRF-TOKEN automaticamente. Use esta página pela mesma origem do frontend configurada no Sanctum. Login e cadastro fundem o carrinho visitante no AuthService; GET /api/cart já retorna o carrinho da conta. Checkout vazio retorna 422. Frete gratuito. Cliente e administrador cancelam somente pedidos em pending_payment; pedidos pagos, enviados ou entregues não podem ser cancelados.'
+servers:
+  -
+    url: /
+paths:
+  /sanctum/csrf-cookie:
+    get:
+      tags:
+        - Público
+      summary: 'Inicializar sessão e cookie XSRF-TOKEN'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/login:
+    post:
+      tags:
+        - Público
+      summary: 'Entrar, fundir o carrinho visitante e regenerar a sessão'
+      description: 'Após validar as credenciais, AuthService consome o carrinho visitante na mesma sessão antes de efetivar o login. GET /api/cart retorna as quantidades somadas e, na primeira consulta, warnings sobre ajustes de estoque. Não exige POST /api/cart/merge. Credenciais inválidas não consomem o visitante. Falha na fusão preserva os carrinhos e não autentica a conta.'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: customer@ticogames.test
+                password:
+                  type: string
+                  example: password
+              required:
+                - email
+                - password
+  /api/register:
+    post:
+      tags:
+        - Público
+      summary: 'Cadastrar cliente, fundir o carrinho visitante e iniciar sessão'
+      description: 'Criação da conta e fusão são transacionais. Falha na fusão desfaz o cadastro e preserva o visitante. O token visitante é removido após sucesso. Consulte GET /api/cart para ler itens e warnings, sem chamada adicional de fusão. Cadastro público sempre cria customer.'
+      responses:
+        201:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInput'
+  /api/me:
+    get:
+      tags:
+        - Conta
+      summary: 'Consultar conta atual'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+  /api/logout:
+    post:
+      tags:
+        - Conta
+      summary: 'Encerrar sessão'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+  /api/user:
+    patch:
+      tags:
+        - Conta
+      summary: 'Editar o próprio perfil'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                password_confirmation:
+                  type: string
+                  format: password
+    delete:
+      tags:
+        - Conta
+      summary: 'Excluir conta sem pedidos'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+  /api/categories:
+    get:
+      tags:
+        - Público
+      summary: 'Listar categories'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Administração
+      summary: 'Criar categories'
+      responses:
+        201:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+  '/api/categories/{id}':
+    get:
+      tags:
+        - Público
+      summary: 'Consultar categories'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+    patch:
+      tags:
+        - Administração
+      summary: 'Atualizar categories'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+    put:
+      tags:
+        - Administração
+      summary: 'Atualizar categories'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+    delete:
+      tags:
+        - Administração
+      summary: 'Excluir categories'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  /api/platforms:
+    get:
+      tags:
+        - Público
+      summary: 'Listar platforms'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Administração
+      summary: 'Criar platforms'
+      responses:
+        201:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+  '/api/platforms/{id}':
+    get:
+      tags:
+        - Público
+      summary: 'Consultar platforms'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+    patch:
+      tags:
+        - Administração
+      summary: 'Atualizar platforms'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+    put:
+      tags:
+        - Administração
+      summary: 'Atualizar platforms'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+    delete:
+      tags:
+        - Administração
+      summary: 'Excluir platforms'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  /api/genres:
+    get:
+      tags:
+        - Público
+      summary: 'Listar genres'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Administração
+      summary: 'Criar genres'
+      responses:
+        201:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+  '/api/genres/{id}':
+    get:
+      tags:
+        - Público
+      summary: 'Consultar genres'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+    patch:
+      tags:
+        - Administração
+      summary: 'Atualizar genres'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+    put:
+      tags:
+        - Administração
+      summary: 'Atualizar genres'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Catalog'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+    delete:
+      tags:
+        - Administração
+      summary: 'Excluir genres'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  /api/products:
+    get:
+      tags:
+        - Público
+      summary: 'Listar products'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  meta:
+                    type: object
+                    properties:
+                      current_page:
+                        type: integer
+                      last_page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
+                  links:
+                    type: object
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'Retorna ativos para visitantes/clientes e também inativos para administradores. Filtros e ordenação são aplicados antes da paginação.'
+      parameters:
+        -
+          name: q
+          in: query
+          schema:
+            type: string
+        -
+          name: category_id
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        -
+          name: platform_id
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        -
+          name: genre_id
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        -
+          name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - id
+              - price_asc
+              - price_desc
+              - newest
+        -
+          name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        -
+          name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 12
+    post:
+      tags:
+        - Administração
+      summary: 'Criar products'
+      responses:
+        201:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Product'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+  '/api/products/{id}':
+    get:
+      tags:
+        - Público
+      summary: 'Consultar products'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Product'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+    patch:
+      tags:
+        - Administração
+      summary: 'Atualizar products'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Product'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                image_path:
+                  type: string
+                platform_id:
+                  type: integer
+                  minimum: 1
+                category_id:
+                  type: integer
+                  minimum: 1
+                price:
+                  type: string
+                  example: '199.90'
+                stock:
+                  type: integer
+                  minimum: 0
+                  maximum: 4294967295
+                is_active:
+                  type: boolean
+                genre_ids:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 1
+    put:
+      tags:
+        - Administração
+      summary: 'Atualizar products'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Product'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                image_path:
+                  type: string
+                platform_id:
+                  type: integer
+                  minimum: 1
+                category_id:
+                  type: integer
+                  minimum: 1
+                price:
+                  type: string
+                  example: '199.90'
+                stock:
+                  type: integer
+                  minimum: 0
+                  maximum: 4294967295
+                is_active:
+                  type: boolean
+                genre_ids:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 1
+    delete:
+      tags:
+        - Administração
+      summary: 'Desativar produto'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  /api/addresses:
+    get:
+      tags:
+        - Conta
+      summary: 'Listar addresses'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Address'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+    post:
+      tags:
+        - Conta
+      summary: 'Criar addresses'
+      responses:
+        201:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Address'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipient_name:
+                  type: string
+                postal_code:
+                  type: string
+                street:
+                  type: string
+                number:
+                  type: string
+                complement:
+                  type: string
+                neighborhood:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+  '/api/addresses/{id}':
+    get:
+      tags:
+        - Conta
+      summary: 'Consultar addresses'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Address'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+    patch:
+      tags:
+        - Conta
+      summary: 'Atualizar addresses'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Address'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipient_name:
+                  type: string
+                postal_code:
+                  type: string
+                street:
+                  type: string
+                number:
+                  type: string
+                complement:
+                  type: string
+                neighborhood:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+    put:
+      tags:
+        - Conta
+      summary: 'Atualizar addresses'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Address'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipient_name:
+                  type: string
+                postal_code:
+                  type: string
+                street:
+                  type: string
+                number:
+                  type: string
+                complement:
+                  type: string
+                neighborhood:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+    delete:
+      tags:
+        - Conta
+      summary: 'Excluir addresses'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  /api/users:
+    get:
+      tags:
+        - Administração
+      summary: 'Listar users'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+    post:
+      tags:
+        - Administração
+      summary: 'Criar users'
+      responses:
+        201:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInput'
+  '/api/users/{id}':
+    get:
+      tags:
+        - Administração
+      summary: 'Consultar users'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+    patch:
+      tags:
+        - Administração
+      summary: 'Atualizar users'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                password_confirmation:
+                  type: string
+                  format: password
+    put:
+      tags:
+        - Administração
+      summary: 'Atualizar users'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                password_confirmation:
+                  type: string
+                  format: password
+    delete:
+      tags:
+        - Administração
+      summary: 'Excluir users'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  /api/cart:
+    get:
+      tags:
+        - Público
+      summary: 'Consultar/criar carrinho da sessão visitante ou da conta'
+      description: 'Após login ou cadastro, retorna o carrinho já fundido pelo AuthService. Os warnings da fusão automática são entregues na primeira consulta e consumidos da sessão. Não expõe o token nem o hash do visitante.'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Cart'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Público
+      summary: 'Limpar carrinho da sessão atual'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/cart/items:
+    post:
+      tags:
+        - Público
+      summary: 'Somar quantidade ao carrinho'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Cart'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_id:
+                  type: integer
+                  minimum: 1
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 4294967295
+              required:
+                - product_id
+                - quantity
+  '/api/cart/items/{id}':
+    patch:
+      tags:
+        - Público
+      summary: 'Definir quantidade; zero remove o item'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Cart'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 0
+                  maximum: 4294967295
+              required:
+                - quantity
+    delete:
+      tags:
+        - Público
+      summary: 'Remover item do carrinho atual'
+      responses:
+        204:
+          description: 'Operação concluída'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  /api/cart/merge:
+    post:
+      tags:
+        - Conta
+      summary: 'Consumir carrinho visitante do servidor uma única vez'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Cart'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Endpoint de compatibilidade: login e cadastro já executam a fusão no AuthService. Usa a sessão, sem receber lista de itens ou identificador do cliente. Soma quantidades até o estoque disponível; inativos/sem estoque são removidos e ajustes retornam em warnings. Apaga o carrinho visitante e invalida seu token. Repetir não duplica itens.'
+  /api/orders:
+    get:
+      tags:
+        - Conta
+      summary: 'Listar os próprios pedidos; admin lista todos'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      parameters:
+        -
+          name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - pending_payment
+              - paid
+              - shipped
+              - delivered
+              - cancelled
+    post:
+      tags:
+        - Conta
+      summary: 'Criar pedido, reservar estoque e esvaziar carrinho'
+      description: 'Recebe somente address_id próprio. Valida o carrinho e baixa o estoque na criação, copiando preços, nomes e endereço em uma transação. Carrinho vazio retorna 422 com message. Produto inativo ou estoque insuficiente retorna 409, sem criar pedido nem esvaziar o carrinho.'
+      responses:
+        201:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Order'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Produto inativo ou estoque insuficiente (409)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Carrinho vazio, endereço ausente/inválido ou total acima do limite (422)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address_id:
+                  type: integer
+                  minimum: 1
+              required:
+                - address_id
+  '/api/orders/{id}':
+    get:
+      tags:
+        - Conta
+      summary: 'Consultar pedido próprio ou qualquer pedido como admin'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Order'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  '/api/orders/{id}/pay':
+    post:
+      tags:
+        - Conta
+      summary: 'Confirmar pagamento simulado, sem nova baixa'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Order'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  '/api/orders/{id}/cancel':
+    post:
+      tags:
+        - Conta
+      summary: 'Cancelar somente pedido pendente e repor estoque uma única vez'
+      description: 'Aceita somente pending_payment, para o dono ou um administrador. Pedido pago, enviado, entregue ou já cancelado retorna 409 sem alterar status, paid_at ou estoque. Decisão de cliente em pedido alheio retorna 403.'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Order'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+  '/api/orders/{id}/status':
+    patch:
+      tags:
+        - Administração
+      summary: 'Avançar para pago, enviado, entregue ou cancelar'
+      responses:
+        200:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Order'
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores. Transições permitidas: pending_payment para paid ou cancelled; paid para shipped; shipped para delivered. Cancelar paid retorna 409, inclusive nesta rota, sem repor estoque. Estados delivered e cancelled são finais.'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - paid
+                    - shipped
+                    - delivered
+                    - cancelled
+              required:
+                - status
+  /api/product-images:
+    post:
+      tags:
+        - Administração
+      summary: 'Enviar imagem JPEG/PNG/WebP de até 5 MB'
+      responses:
+        201:
+          description: 'Operação concluída'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      image_path:
+                        type: string
+        401:
+          description: 'Sessão autenticada necessária'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: 'Acesso negado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: 'Não encontrado'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: 'Conflito com estoque ou estado atual'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        419:
+          description: 'Sessão/CSRF inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        422:
+          description: 'Dados inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: 'Muitas tentativas'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        -
+          SessionCookie: {  }
+      description: 'Somente administradores.'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+              required:
+                - image
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: ticogames-session
+      description: 'Cookie HttpOnly gerado pela API; utilize login em vez de preencher manualmente.'
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum:
+            - customer
+            - admin
+    Catalog:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+        products_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        category_id:
+          type: integer
+          minimum: 1
+        category:
+          $ref: '#/components/schemas/Catalog'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Catalog'
+        platform_id:
+          type: integer
+          minimum: 1
+        platform:
+          $ref: '#/components/schemas/Catalog'
+        genres:
+          type: array
+          items:
+            $ref: '#/components/schemas/Catalog'
+        name:
+          type: string
+        description:
+          type: string
+        image_path:
+          type: string
+        price:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          example: '199.90'
+        stock:
+          type: integer
+          minimum: 0
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        recipient_name:
+          type: string
+        postal_code:
+          type: string
+        street:
+          type: string
+        number:
+          type: string
+        complement:
+          type: string
+        neighborhood:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        product_id:
+          type: integer
+          minimum: 1
+        quantity:
+          type: integer
+          minimum: 1
+        subtotal:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          example: '199.90'
+        product:
+          $ref: '#/components/schemas/Product'
+    Cart:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        subtotal:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          example: '199.90'
+        shipping_cost:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          example: '199.90'
+        total:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          example: '199.90'
+        warnings:
+          type: array
+          description: 'Ajustes da fusão explícita ou, no primeiro GET após autenticar, da fusão automática.'
+          items:
+            type: string
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        product_id:
+          type: integer
+          minimum: 1
+        product_name:
+          type: string
+        unit_price:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          example: '199.90'
+        quantity:
+          type: integer
+          minimum: 1
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        user_id:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+            - pending_payment
+            - paid
+            - shipped
+            - delivered
+            - cancelled
+        total:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          example: '199.90'
+        shipping_cost:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          example: '199.90'
+        created_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shipping_recipient_name:
+          type: string
+        shipping_postal_code:
+          type: string
+        shipping_street:
+          type: string
+        shipping_number:
+          type: string
+        shipping_complement:
+          type: string
+        shipping_neighborhood:
+          type: string
+        shipping_city:
+          type: string
+        shipping_state:
+          type: string
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    ProductInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        image_path:
+          type: string
+        platform_id:
+          type: integer
+          minimum: 1
+        category_id:
+          type: integer
+          minimum: 1
+        price:
+          type: string
+          example: '199.90'
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 4294967295
+        is_active:
+          type: boolean
+        genre_ids:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+      required:
+        - name
+        - description
+        - image_path
+        - platform_id
+        - category_id
+        - price
+        - stock
+    AccountInput:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        password_confirmation:
+          type: string
+          format: password
+      required:
+        - name
+        - email
+        - password
+        - password_confirmation

@@ -2,89 +2,79 @@
 
 namespace App\Services;
 
-// O Service concentra a consulta e a gravação, sem depender de requisições HTTP.
 use App\Models\Product;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class ProductService
 {
-    // Lista todos os cadastros, inclusive inativos, para conferir o CRUD administrativo.
-    // with() carrega os relacionamentos e evita consultar cada associação separadamente.
-    public function listAll(bool $includeInactive = true): Collection
+    public function listAll(bool $includeInactive = true, array $filters = []): LengthAwarePaginator
     {
-        $products = Product::with(['platform', 'categories', 'genres'])->when(! $includeInactive, fn ($query) => $query->where('is_active', true))->orderBy('id')->get();
+        $query = Product::with(['platform', 'category', 'genres'])->when(! $includeInactive, fn ($query) => $query->where('is_active', true));
+        if (! empty($filters['q'])) {
+            $query->where('name', 'like', '%'.$filters['q'].'%');
+        }
+        foreach (['category_id', 'platform_id'] as $field) {
+            if (! empty($filters[$field])) {
+                $query->where($field, $filters[$field]);
+            }
+        }
+        if (! empty($filters['genre_id'])) {
+            $query->whereHas('genres', fn ($query) => $query->where('genres.id', $filters['genre_id']));
+        }
+        match ($filters['sort'] ?? 'id') {
+            'price_asc' => $query->orderBy('price')->orderBy('id'),
+            'price_desc' => $query->orderByDesc('price')->orderBy('id'),
+            'newest' => $query->orderByDesc('created_at')->orderByDesc('id'),
+            default => $query->orderBy('id'),
+        };
 
-        return $products;
+        return $query->paginate($filters['per_page'] ?? 12)->withQueryString();
     }
 
-    // Busca pelo ID com os relacionamentos; findOrFail() gera 404 se não encontrar.
     public function findById(int $id, bool $includeInactive = true): Product
     {
-        $product = Product::with(['platform', 'categories', 'genres'])->when(! $includeInactive, fn ($query) => $query->where('is_active', true))->findOrFail($id);
-
-        return $product;
+        return Product::with(['platform', 'category', 'genres'])->when(! $includeInactive, fn ($query) => $query->where('is_active', true))->findOrFail($id);
     }
 
-    // Cadastra os campos do produto e as associações em uma única transação.
     public function create(array $data): Product
     {
-        $product = DB::transaction(function () use ($data) {
-            // IDs de categorias e gêneros pertencem às tabelas de ligação.
-            $categoryIds = $data['category_ids'];
+        return DB::transaction(function () use ($data) {
             $genreIds = $data['genre_ids'] ?? [];
-            unset($data['category_ids'], $data['genre_ids']);
-
-            // Salva somente as colunas que pertencem à tabela products.
+            unset($data['genre_ids']);
             $product = Product::create($data);
-
-            // sync() grava exatamente as associações informadas no cadastro.
-            $product->categories()->sync($categoryIds);
             $product->genres()->sync($genreIds);
 
-            // Relê o cadastro com os padrões do banco e os relacionamentos.
-            $product = $this->findById($product->id);
-
-            return $product;
+            return $this->findById($product->id);
         });
-
-        return $product;
     }
 
-    // Atualiza os campos enviados, preservando os que não foram informados.
     public function update(int $id, array $data): Product
     {
-        $product = Product::findOrFail($id);
-
-        $product = DB::transaction(function () use ($product, $data) {
-            // null significa que a lista não foi enviada; [] permite retirar todos os gêneros.
-            $categoryIds = $data['category_ids'] ?? null;
+        return DB::transaction(function () use ($id, $data) {
+            $product = Product::whereKey($id)->lockForUpdate()->firstOrFail();
             $genreIds = $data['genre_ids'] ?? null;
-            unset($data['category_ids'], $data['genre_ids']);
-
+            unset($data['genre_ids']);
             $product->update($data);
-
-            // Só substitui as associações quando a respectiva lista vier na requisição.
-            if ($categoryIds !== null) {
-                $product->categories()->sync($categoryIds);
-            }
-
             if ($genreIds !== null) {
                 $product->genres()->sync($genreIds);
             }
 
-            $product = $this->findById($product->id);
-
-            return $product;
+            return $this->findById($product->id);
         });
-
-        return $product;
     }
 
-    // Retira o produto de oferta, preservando seu ID, associações e histórico.
+    public function upload(UploadedFile $image): string
+    {
+        $path = $image->store('products', 'public');
+        abort_unless($path, 500, 'Não foi possível salvar a imagem.');
+
+        return '/storage/'.$path;
+    }
+
     public function delete(int $id): void
     {
-        $product = Product::findOrFail($id);
-        $product->update(['is_active' => false]);
+        Product::findOrFail($id)->update(['is_active' => false]);
     }
 }

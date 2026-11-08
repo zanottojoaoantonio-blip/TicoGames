@@ -13,6 +13,10 @@ class OrderResource extends JsonResource
         return [
             'id' => $this->id,
             'status' => $this->status,
+            'user_id' => $this->user_id,
+            'created_at' => $this->created_at?->toISOString(),
+            'paid_at' => $this->paid_at?->toISOString(),
+            'shipping_cost' => '0.00',
             'total' => $this->total,
             'shipping_recipient_name' => $this->shipping_recipient_name,
             'shipping_postal_code' => $this->shipping_postal_code,

@@ -1,428 +1,48 @@
-# TicoGames — contexto para continuar o projeto
+# Contexto para continuar o TicoGames
 
-Última atualização: 04/11/2026.
+Atualizado em 08/11/2026. Este documento registra o estado atual; o histórico antigo de etapas foi substituído para evitar instruções contraditórias.
 
-## Leia isto primeiro
+## Projeto e convenções
 
-Este arquivo registra o contexto para continuar em outro computador ou conversa. Leia também `docs/data-model.md`, `docs/migrations.md`, `docs/seeders.md`, `docs/crud-catalog.md`, `docs/crud-products.md` e `docs/README.md`. Confira os arquivos atuais antes de alterar código. Os caminhos são relativos à raiz.
+- Backend em api/: Laravel 12, Sanctum por sessão, MySQL 8.4 e BCMath.
+- Frontend em front/: oito páginas HTML, JavaScript, CSS e Bootstrap; Axios para requisições.
+- Compose único na raiz, com mysql, api, frontend e proxy. Perfil qa isolado na porta 8081.
+- Controllers delegam aos Services, FormRequests validam e Resources selecionam JSON.
+- Manter nomes de código em inglês e explicações/documentação em português.
+- Reutilizar a estrutura e dependências instaladas, com mudanças pequenas e completas.
 
-**Estado atual. O usuário pediu a retomada da etapa 8 com explicações passo a passo. O Sanctum 4.3.3 foi reinstalado a partir do lock. O cadastro, o login, a consulta da conta e o logout usam sessão, cookie e CSRF. Os fluxos privados voltaram à API com autenticação, e as operações administrativas exigem perfil admin. A suíte passou com 45 testes e 684 asserções. O acesso sem autenticação à API retorna 401 JSON mesmo sem o header Accept, corrigindo o erro 500 em /api/users. O Vue segue para a etapa 9 quando solicitado.**
+Leia [README principal](../README.md), [ambiente](README.md), [regras de compra](account-checkout.md) e [correções](correcoes-projeto.md).
 
-O Compose segue a estrutura do projeto de referência. O Laravel roda com FrankenPHP no serviço `api` em `api/`, o Vue fica em `front/` e o Nginx de entrada em `proxy/`. O endereço público é `http://localhost`. As referências a `php`, `front-end/` e às portas 5173 e 8000 no navegador nos relatos abaixo descrevem configurações anteriores. Os passos atuais estão em [README.md](README.md) e [authentication.md](authentication.md).
+## Regras consolidadas
 
-O usuário pediu: “pode fazer todos os crud e me explique os depois pode ser somente 1 mas todos as requisições e suas respectivas respostas desde onde ela inicia até onde termina”. Foram completados os quatro CRUDs do catálogo definidos nesta conversa e explicado produtos do início ao fim. Ele usa Thunder Client; a imagem anterior tinha `www.localhost` e um header Accept incorreto. Orientar `http://localhost:8000/api/products`, sem `www`, e `Accept: application/json`. Não alterar o backend para compensar erros de preenchimento.
+Carrinho visitante vive no banco com hash de token aleatório da sessão. Login/cadastro fundem no AuthService antes de concluir a autenticação. GET /api/cart já retorna o carrinho da conta; warnings são consumidos na primeira leitura. O frontend não dispara fusão. A rota POST /api/cart/merge permanece por compatibilidade e não recebe itens no corpo.
 
-O usuário detalhou o fluxo visual do carrinho, mas esclareceu em seguida: “Não, vamos seguir os passos ja delimitados”. Esse fluxo fica planejado para a etapa 9; não implementar o frontend agora. A preparação iniciada não criou telas. O usuário pediu manter `front-end/package-lock.json`; o arquivo foi restaurado e conferido com `package.json`.
+Quantidades são limitadas ao estoque na fusão. Visitante consumido é apagado e seu token removido. Credenciais inválidas e falhas preservam os carrinhos; falha de fusão no cadastro desfaz a conta.
 
-Ao concluir uma etapa, atualize este arquivo com o que mudou, o que foi verificado e qual é o próximo passo. Registre limitações sem apresentar funcionalidades planejadas como já implementadas.
+Checkout vazio retorna 422; estoque/atividade em conflito retorna 409. O pedido baixa estoque na criação, copia nomes/preços/endereço e limpa carrinho em transação. Pagar apenas marca paid/paid_at. Dono/admin cancelam somente pending_payment; admin não cancela paid. Fluxo administrativo: paid → shipped → delivered. Estados inválidos retornam 409; decisão alheia por cliente retorna 403 e consulta alheia 404.
 
-## Correção do acesso sem autenticação — 04/11/2026
+Produto tem uma category_id e uma plataforma; gêneros são múltiplos. Resposta mantém categories=[categoria] por compatibilidade. Pesquisa/filtros/ordenação/paginação são do servidor. Frete gratuito e pagamento simulado.
 
-- O usuário relatou 500 em `GET /api/users`. O middleware de autenticação tentava resolver `route('login')` quando a requisição não pedia JSON, antes do tratamento JSON de exceções.
-- Configurado `redirectGuestsTo` em `api/bootstrap/app.php` para retornar null nos caminhos `api/*`, permitindo a resposta 401 JSON já definida no Handler. Mantido o comportamento padrão fora da API.
-- Acrescentado teste que reproduzia o 500 e agora verifica 401 JSON sem redirecionamento com Accept ausente, `*/*`, `text/html` e `application/json`.
-- Verificado: 45 testes e 684 asserções em SQLite em memória; Pint nos dois arquivos PHP; HTTP pelo proxy com visitante 401, cliente 403 e administrador 200 em `/api/users`. As verificações HTTP apenas consultaram dados e fizeram login/logout com as contas de demonstração.
+Perfil edita a conta atual. Admin gerencia produtos/categorias, imagens e pedidos. Todas as páginas carregam config.js antes do Store e têm Perfil/Pedidos nos menus desktop e móvel. Texto administrativo é “Pedidos”; cliente usa “Meus pedidos”.
 
-## Configuração única do ambiente — 04/11/2026
+## Ambiente da apresentação
 
-- O usuário pediu somente um `.env`. O arquivo ativo permanece na raiz; `api/.env.example` continua apenas como modelo versionado.
-- O serviço `api` usa `env_file: ./.env`. Removida a montagem do arquivo em `/app/.env`, que podia deixar um arquivo vazio em `api/.env`.
-- Preservadas a chave e as credenciais existentes. O Laravel recebe as variáveis do ambiente do contêiner. Depois de editar o `.env`, limpe o cache e recrie a API conforme `README.md`.
-- Atualizados os passos de geração da chave para usar `key:generate --show` e salvar o resultado somente no `.env` da raiz.
-- `phpunit.xml` define os valores de teste em `$_SERVER`, que o Laravel consulta antes das variáveis herdadas do Docker. O TestCase interrompe a inicialização se o ambiente não for `testing` com SQLite em memória, antes das migrations.
-- `composer test` executa o PHPUnit diretamente, evitando os avisos do adaptador do `artisan test` sobre o arquivo `.env` ausente no contêiner.
-- Durante a primeira validação, a tentativa de substituir as variáveis apenas com `<env force="true">` não substituiu `$_SERVER`. A suíte atingiu o MySQL e limpou os dados de demonstração. O estado original foi recuperado dos logs binários anteriores a `binlog.000005:237` em um MySQL temporário isolado e restaurado. Todos os 54 INSERTs do dump foram conferidos integralmente; a estrutura ficou equivalente, com apenas a declaração redundante de `CHARACTER SET utf8mb4` explícita na saída do dump. Não foi usada uma nova carga de seeders para substituir os dados originais.
-- Verificado após corrigir o isolamento: 44 testes e 664 asserções no PHPUnit, sem avisos; proteção contra MySQL confirmada antes das migrations; roteiro Bash de geração da chave verificado com chave vazia e existente. O roteiro PowerShell foi revisado, mas não executado neste Linux. A etapa 9 (Vue) continua aguardando solicitação.
-- HTTP após restaurar: catálogo 200, CSRF 204, login/me 200 e logout 204 para cliente e administrador; consulta sem login 401. O `.env` da raiz permaneceu byte a byte igual ao original, e `api/.env` não foi recriado.
+MySQL principal preparado com 30 produtos, três categorias, três clientes e um admin. Há três inativos, três sem estoque e seis pedidos nos cinco estados, incluindo o pedido pago que já existia. A API pública mostra 27 ativos.
 
-## Retomada passo a passo do Sanctum — 03/11/2026
+Todos os registros anteriores foram preservados integralmente, incluindo os quatro itens do carrinho do cliente padrão. O seeder escolhe uma conta fictícia com carrinho vazio para criar cenários. Repetir a carga não modifica os dados. Backup SQL anterior: .local-backups/pre-demo-20261108.sql.
 
-1. Instalada a versão registrada no Composer, preservando as demais versões do lock.
-2. Restaurados `statefulApi()`, a origem do Vue e o CORS com credenciais. O CSRF é inicializado em `/sanctum/csrf-cookie`.
-3. Restaurados os FormRequests, o AuthService e o AuthController, que usa o UserResource existente. O middleware `RequireFrontendSession` rejeita cadastro e login sem sessão antes de gravar ou autenticar uma conta.
-4. Restauradas as rotas privadas com `auth:sanctum` e as permissões administrativas. Consultas públicas do catálogo mostram produtos ativos.
-5. Verificados 44 testes, 664 asserções, Pint e Composer. O teste HTTP confirmou CSRF, cadastro, login, consulta da conta, bloqueio de escrita para cliente e logout em SQLite temporário.
+A migration de evolução já está aplicada. Não recrie a base nem volumes. category_product é arquivo sem uso; pagamentos antigos podem ter paid_at nulo.
 
-O guia de uso está em [authentication.md](authentication.md). As seções seguintes registram o histórico.
+## Verificação atual
 
-## Reversão da autenticação — 03/11/2026
+57 testes PHP/900 asserções e 72 testes Node aprovados; Pint aprovado nos sete PHP alterados. HTTP real no QA verificou sessão/CSRF, fusão no cadastro/login sem endpoint extra, 422 no checkout vazio e 409 ao admin cancelar pago pelas duas rotas.
 
-O usuário indicou o [guia de Laravel](https://victor-raphael17.github.io/studies/laravel.html) como referência para a arquitetura MVC com Service Layer, FormRequests e API Resources. O segundo material indicado, no Google Docs, exigiu login e ficou sem leitura.
+Os 18 arquivos HTML/JS estáticos comparados em localhost coincidem com o disco; config.js gerado foi conferido separadamente. Swagger atualizado em /api/docs, YAML em api/openapi.yaml e /api/openapi.yaml.
 
-O Composer removeu apenas laravel/sanctum. O catálogo voltou às 20 rotas locais da etapa 7 e inclui produtos inativos nas consultas. As rotas de conta, endereços, carrinho e pedidos aguardam autenticação. Os testes HTTP que dependiam dessas rotas foram retirados da suíte e podem ser consultados no histórico Git. A verificação atual confirma que as rotas privadas e do Sanctum retornam 404. O histórico da integração anterior está registrado a seguir.
+Não houve teste de carga, concorrência real de múltiplos processos MySQL ou nova inspeção visual manual. Consulte [evidências](frontend-verification.md).
 
-## Integração dos históricos em 03/11/2026
+## Próximos trabalhos
 
-O usuário autorizou integrar o commit remoto e repetir o push. Mantidos os fluxos de autenticação e checkout do remoto, com as validações, datas e campos de Resources locais. O tratamento de exceções de `bootstrap/app.php` combina Sanctum e o middleware admin com respostas JSON nas rotas `api/*`, mesmo com `Accept: */*`. Os Requests de atualização preservam a busca do registro antes da validação e a unicidade que ignora o Model encontrado. O limite local de descrição continua em 10.000 caracteres. Os testes dos dois históricos foram combinados, incluindo login administrativo para os CRUDs protegidos.
+O usuário restringiu esta revisão aos itens 1 a 5, Markdown e Swagger. **Commit, envio ao GitHub e hospedagem foram explicitamente adiados.** Não foi feito commit/push nesta revisão. Não existe hospedagem pública comprovada.
 
-Verificação desta integração: 43 testes aprovados, 660 asserções e nenhum ignorado, em SQLite em memória. Pint aplicado nos 56 arquivos PHP verificados. Dependências instaladas a partir do composer.lock, sem alterar suas versões. Os números de testes nas seções anteriores são históricos. O próximo passo de produto continua sendo a etapa 9 (Vue), somente quando solicitado.
-
-## Etapa 8 e demais fluxos de CRUD — 02/11/2026
-
-Pedido do usuário: arrumar os Controllers e Services dos outros cadastros e iniciar a autenticação; em seguida pediu usar https://victor-raphael17.github.io/studies/sanctum.html#passo-1 como modelo. A implementação foi adaptada a esse guia após leitura integral.
-
-- Instalado laravel/sanctum 4.3.3 com Composer, preservando as rotas existentes. Como usamos apenas sessão, não foram adicionados HasApiTokens, emissão de tokens nem migration de personal_access_tokens.
-- RegisterRequest e LoginRequest; AuthService com register(array, Request), login(array, Request) e logout(Request); AuthController com register, login, me e logout. Senha usa o cast hashed já existente. Cadastro público sempre recebe customer; UserResource inclui role, mas nunca senha.
-- Rotas de autenticação somente em routes/api.php: POST register/login públicos com throttle:6,1; GET me e POST logout protegidos por auth:sanctum. Não duplicadas em routes/web.php. O Service regenera a sessão depois de autenticar e a invalida no logout. Cadastro/login e me usam no-store.
-- statefulApi() ativo, CORS com credenciais e origem exata localhost:5173, defaults locais no config/sanctum.php e exemplos no .env.example. O Vue continuará usando localhost:5173 e a API localhost:8000, em vez da porta 80/127.0.0.1 da aula. Requisições manuais precisam de Origin para ativar a sessão stateful.
-- Mantido catálogo público para consulta, conforme regra anterior da loja. Somente admin modifica produtos/categorias/plataformas/gêneros e gerencia users. Produtos inativos ficam visíveis apenas ao admin na consulta de catálogo.
-- UserController/UserService: CRUD administrativo em /api/users; cliente altera/exclui a própria conta em /api/user e consulta identidade em /api/me. Contas com pedidos não são excluídas, preservando a restrição histórica. Não existe endpoint para promover perfis.
-- AddressController/AddressService: CRUD por dono, sem aceitar user_id do cliente. CartController/CartService: carrinho persistente, inclusão, alteração e remoção de itens e merge após login. O frontend ainda precisa enviar/limpar os itens locais; o endpoint soma quantidades em cada chamada.
-- OrderController/OrderService: consulta própria, criação a partir do carrinho e endereço próprio, cópias históricas, total calculado com BCMath e pagamento/cancelamento simulados. Criação não reserva estoque; confirmação valida novamente e baixa uma única vez. Transações e lockForUpdate no pedido/produtos protegem as decisões. A suíte SQLite não testa a concorrência real de bloqueios MySQL; essa limitação está registrada em docs/account-checkout.md.
-- Verificado após ajustes ao guia: **40 testes aprovados, 511 asserções**, sem ignorados. Testes em SQLite em memória, incluindo isolamento entre contas, estoque, rollback, histórico e throttle. Os testes de troca de conta usam sessão nova e guard web explícito para simular clientes distintos sem enfraquecer o middleware.
-- Verificação HTTP real com a conta admin de demonstração existente: csrf-cookie 204; login sem CSRF 419; login válido 200; me 200; POST vazio em categories 422; mesma escrita sem CSRF 419; logout 204; me depois do logout 401. CORS respondeu origem localhost:5173 e credenciais. Não foram criados registros de negócio no MySQL por essa verificação.
-- Pint aplicado. O Composer indicou um aviso em symfony/mime já presente no lock: atualizado 7.4.19 para 7.4.22 e polyfill-mbstring 1.43.0 para 1.43.3; instalação final informou ausência de avisos de segurança.
-- Guias novos: docs/authentication.md (correspondência com a aula e consumo por cookie/CSRF) e docs/account-checkout.md (rotas e regras dos fluxos novos).
-
-Próximo passo: etapa 9, Vue, somente quando solicitado. Não criar telas nesta entrega. Os registros abaixo descrevem o histórico anterior e não substituem este estado atual.
-
-## Validação da etapa 7 — 02/11/2026
-
-A pedido do usuário, iniciado Docker Desktop e executado `docker compose up -d mysql php`. Ambos os serviços estão saudáveis. A suíte passou antes e depois do Pint: **23 testes aprovados, 369 asserções, nenhum ignorado**. Pint corrigiu formatação em 24 arquivos PHP das alterações acumuladas. Testes em SQLite em memória, sem alterar os dados do MySQL. A etapa 7 está concluída; os relatos de bloqueio abaixo descrevem a tentativa anterior à inicialização do ambiente. Próxima etapa: Sanctum, somente quando solicitado.
-
-## Etapa 7 — 02/11/2026
-
-O usuário autorizou implementar FormRequests e Resources após a explicação. Guia: `docs/requests-resources.md`. O histórico abaixo descreve etapas anteriores, inclusive a antiga ausência de validação.
-
-- Store/Update Requests próprios para Product, Category, Platform e Genre, sem classes base extras.
-- Atualização parcial com sometimes; required impede esvaziar campos obrigatórios. Nomes de classificações únicos, ignorando o ID da URL na edição.
-- Produto exige plataforma existente, categoria não vazia, IDs distintos e existentes, preço não negativo com até duas casas e limites de coluna, estoque inteiro entre 0 e 4294967295. Gêneros opcionais aceitam [] para remover todos.
-- authorize retorna true nesta etapa; permissões ficam na etapa 8.
-- Resources usam whenLoaded e whenCounted. Mantidas regras de negócio dos Services e DELETE 204.
-- Testes de validação reativados, contrato data atualizado e acrescentados casos de atualização inválida e saída sem campos internos.
-- Sintaxe PHP passou. Testes não executados por ausência de vendor/autoload.php; Docker não está disponível. Não declarar a suíte aprovada nesta entrega.
-
-## Comparação com o tutorial em 31/10/2026
-
-A pedido do usuário, comparados os códigos existentes com https://victor-raphael17.github.io/studies/laravel.html, especialmente os Passos 5 a 8, correspondentes às partes já implementadas. Os Controllers já seguem o Passo 8: injeção do Service, IDs inteiros, cinco ações, variáveis e respostas JSON.
-
-- Ajustados os quatro Services para guardar os resultados em variáveis antes de retornar, como no tutorial.
-- Acrescentado `whereNumber('id')` aos quatro resources, mantendo o parâmetro renomeado para `{id}`. A referência usa os nomes padrão `genre` e `book`; a restrição precisa acompanhar o nome real do parâmetro.
-- Mantidos campos e relacionamentos próprios da loja, casts, contagens, ordenação, transações, desativação de produtos e bloqueio de exclusão de classificações utilizadas. O tutorial trata livros com um gênero; copiar sua exclusão em cascata alteraria as regras da loja.
-- Mantidos seeders repetíveis com `firstOrCreate`, `firstOrNew` e `syncWithoutDetaching`, preservando preços, estoques e vínculos existentes. A referência mostra `create`/`insert`, que não preservam esses comportamentos. Não adicionado `HasFactory`, conforme preferência registrada do usuário.
-- Criado `tests/Feature/ApiRouteTest.php`: verifica 404 para ID não numérico nos quatro recursos, em GET, PUT, PATCH e DELETE.
-- Sintaxe PHP e `git diff --check` verificados. Suíte e Pint não executados: Docker indisponível e dependências locais ausentes (`vendor/autoload.php`). Os números de testes da revisão anterior são históricos; não representam uma execução desta comparação.
-- FormRequests e Resources continuam na etapa 7; autenticação na etapa 8. Esta comparação não iniciou essas etapas.
-
-Checklist para o ambiente preparado: executar `php artisan test`, executar Pint nos arquivos alterados e conferir GET/PUT/PATCH/DELETE `/api/products/abc` e equivalentes com resposta 404.
-
-## Contexto do estudante e forma de trabalhar
-
-- O usuário se descreve como estudante intermediário e está fazendo o projeto final do curso.
-- O prazo informado anteriormente foi de duas semanas para fazer, entender e explicar o projeto para uma banca; o prazo não foi reconfirmado nesta revisão.
-- Priorize soluções simples e fáceis de explicar. Evite ferramentas, abstrações e funcionalidades extras sem necessidade.
-- Faça somente uma etapa por vez e espere o usuário dizer “próximo”.
-- Na etapa 3, o usuário pediu um Model por vez e depois autorizou `Order` e `OrderItem` juntos. Na etapa 6, começou pedindo um CRUD por vez, mas alterou a preferência ao autorizar os CRUDs do catálogo juntos e pedir a explicação completa de um exemplo, com todas as requisições e respostas. Continua valendo uma etapa por vez.
-- Nas migrations, o usuário pediu explicar bem os conceitos novos e executar diretamente os casos que repetem a mesma estrutura. O guia está em `docs/migrations.md`.
-- O usuário reforçou que toda a configuração de autenticação será feita somente na etapa 8, com Sanctum. Na etapa 3, focar em campos, tipos e relacionamentos para fazer os dados e o sistema funcionarem. Registro, login, sessão, regras de acesso e verificações específicas de segurança ficam para a etapa 8; não ampliar a revisão dos Models com esse trabalho. Os recursos padrão do Laravel já presentes no `User` podem permanecer.
-- Usar somente seeders para os dados iniciais e de demonstração, sem factories, a pedido do usuário. Todos os Models estão sem `HasFactory`, e o `User` está sem a referência à `UserFactory`. A factory padrão ainda existe como arquivo sem uso. Os seeders da etapa 5 usam os Models diretamente; o `DatabaseSeeder` não chama factories.
-- Explique o conceito antes de apresentar ou escrever código.
-- Comente cada parte do código para ajudar no aprendizado.
-- Explique em português; use nomes de tabelas, classes, métodos e campos em inglês.
-- Quando houver alternativas relevantes, apresente as opções e justifique a escolha.
-- Termine cada etapa com um checklist do que testar. Diferencie verificações executadas de testes ainda pendentes.
-
-## Projeto e tecnologias
-
-E-commerce de jogos físicos e consoles chamado **TicoGames**.
-
-- Backend: Laravel 12; a instalação verificada está na versão **12.70.2**.
-- Banco: MySQL 8.4.
-- Ambiente: Docker e Docker Compose.
-- Frontend: Vue, com Vite, na pasta `front-end/`.
-- Autenticação: Laravel Sanctum por sessão e cookie na etapa 8.
-- Ambiente de origem: Windows com PowerShell. Os caminhos locais e os processos não são transferidos só por copiar este arquivo.
-- A revisão das etapas 1 a 4 ocorreu também em Linux com Bash, na pasta `/home/joaoantonio/TicoGames`. A etapa 5 foi executada no Windows com PowerShell, em `C:\Users\Pichau\TicoGames`. `docs/README.md` tem instruções para Linux e Windows.
-
-## Etapas combinadas
-
-| Etapa | Conteúdo | Estado |
-| --- | --- | --- |
-| 1 | Modelagem de dados | Revisada e concluída em 28/10/2026; registrada em `docs/data-model.md`. |
-| 2 | Inicializar projeto Laravel | Revisada e concluída em 28/10/2026 na pasta atual. |
-| 3 | Models | Concluída: 10 Models revisados, comentados e com sintaxe PHP verificada. |
-| 4 | Migrations | Concluída: 12 novas, 15 aplicadas no total e verificadas no MySQL. |
-| 5 | Seeders | Concluída: carga fictícia sem factories, repetição verificada e testes aprovados. |
-| 6 | CRUD básico: Controllers e Services | Catálogo concluído; fluxos de contas, endereços, carrinho e pedidos completados junto à etapa 8. |
-| 7 | CRUD completo: Resources e FormRequests | Concluída: 23 testes aprovados, 369 asserções; Pint aplicado. |
-| 8 | Registro, login e sessão | Concluída com Sanctum. |
-| 9 | Frontend: login/registro, catálogo, administração, carrinho, pagamento simulado e status | Pendente. |
-
-## Regras de negócio definidas
-
-- Vender jogos físicos e consoles, sem entrega digital ou chaves de ativação.
-- Um jogo para PS5 e sua versão para Xbox são produtos separados, com preços e estoques próprios.
-- Cada produto tem várias categorias e uma plataforma. Será necessária a tabela `category_product`, sem `category_id` diretamente em `products`.
-- Jogos podem ter vários gêneros, como Ação, Aventura e RPG, usados como filtro de busca; consoles não precisam ter gênero. Categorias e gêneros foram mantidos separados nesta modelagem.
-- O usuário esclareceu que “porte de console” significa plataforma, como PS5, Xbox Series ou Nintendo Switch. A busca terá filtros por gênero e plataforma, sem um filtro adicional de console de mesa, portátil ou híbrido.
-- Dados dos produtos: nome, descrição, preço, uma imagem, categorias, plataforma, estoque e indicador de ativo.
-- Dois perfis em `users.role`: `customer` e `admin`. Não há perfil separado de vendedor.
-- Visitantes podem navegar e montar carrinho; login é obrigatório para criar pedido.
-- Carrinho do visitante persiste no `localStorage` do mesmo navegador. Isso não sincroniza entre dispositivos.
-- Carrinho do cliente autenticado fica no banco e deve ser preservado ao sair da conta.
-- No login, incorporar os itens do visitante ao carrinho da conta; somar quantidades de produtos iguais e validar a disponibilidade antes da compra.
-- Após incorporar com sucesso os itens do visitante, retirar os itens transferidos do carrinho local para não duplicá-los a cada login.
-- Um cliente cadastra um endereço por vez, pode salvar vários e seleciona exatamente um por pedido, por meio de cartões de seleção.
-- Cada pedido guarda uma cópia do endereço escolhido; alterações no cadastro não mudam pedidos existentes.
-- Cada item de pedido guarda nome e preço unitário históricos.
-- Pagamento é simulado: o próprio cliente confirma o pagamento de seu pedido, como se tivesse acabado de pagar por cartão ou Pix. Não integrar gateway ou cobrança real.
-- O usuário confirmou que haverá apenas confirmar ou cancelar o pagamento, sem escolher nem registrar Pix ou cartão. Não criar `payment_method`.
-- A tela de um pedido pendente oferece duas caixas de ação, uma abaixo da outra: confirmar pagamento e cancelar compra. As opções são alternativas sobre o mesmo pedido.
-- O resumo do carrinho/compra mostra itens e total. O botão de confirmar abre “Confirme a compra”; o de cancelar abre “Você quer mesmo cancelar?”. Cada confirmação oferece voltar ou concluir a ação escolhida. Apenas abrir ou fechar a confirmação não altera pedido nem estoque. Implementar esse fluxo somente na etapa 9.
-- Status: somente `pending_payment`, `paid` e `cancelled`.
-- O estoque diminui somente quando a confirmação do cliente é aceita pelo backend.
-- Carrinhos e pedidos pendentes não reservam unidades. Conferir estoque ao criar o pedido e novamente ao confirmar pagamento.
-- Se faltar estoque, não confirmar o pagamento. A confirmação e a baixa de todos os itens devem ocorrer juntas, em uma transação, com proteção contra confirmações simultâneas.
-- Não diminuir estoque novamente se o pedido já estiver pago. Pedidos pagos ou cancelados não aceitam outra decisão; confirmação e cancelamento concorrentes devem resultar em apenas uma decisão aceita.
-- O cliente pode cancelar um pedido próprio enquanto estiver aguardando pagamento. Nesse caso não há estoque para devolver.
-- Desativar produtos com `is_active` para preservar o histórico dos pedidos.
-- Valores monetários: `decimal(10,2)`. Estoque e quantidades: inteiros.
-
-**Ideia adiada a pedido do usuário:** expiração automática de pedidos sem pagamento. Foi sugerido prazo de 24 horas, mas o prazo e a implementação ficaram para depois. Não criar agendador ou regra de expiração agora.
-
-Também não foram incluídos nesta entrega reembolsos, cancelamento após pagamento, cupons, avaliações, múltiplos vendedores ou cálculo de frete. Não ampliar o escopo sem combinar com o usuário.
-
-## Estrutura implementada no banco
-
-As 12 tabelas de negócio definidas nesta revisão são:
-
-`users`, `addresses`, `categories`, `platforms`, `genres`, `products`, `category_product`, `genre_product`, `carts`, `cart_items`, `orders` e `order_items`.
-
-Campos e regras estão em `docs/data-model.md`; a implementação e as verificações da etapa 4 estão em `docs/migrations.md`. Foram aplicadas 15 migrations: as 3 padrão do Laravel e 12 novas, incluindo uma alteração para `users.role` e 11 criações de tabelas. O banco tem as 12 tabelas de negócio e 8 técnicas do Laravel.
-
-Os 10 Models estão revisados: `User`, `Address`, `Category`, `Platform`, `Genre`, `Product`, `Cart`, `CartItem`, `Order` e `OrderItem`. `Category.products()` e `Product.categories()` usam `belongsToMany`, sem `category_id` em `products`. As tabelas de ligação usam relacionamentos muitos-para-muitos do Eloquent, sem classes próprias.
-
-Os Models, tabelas e seeders estão definidos. O catálogo está disponível, e os fluxos de contas, endereços, carrinho e pedidos exigem autenticação. O guia de rotas está em account-checkout.md.
-
-## Revisão da etapa 6 em 29/10/2026 — padrão solicitado pelo usuário
-
-- Pedido: refazer os quatro Controllers no estilo do `GenreController` fornecido pelo usuário. Ele confirmou: “vamos se preocupar com validação no proximo passo (form requests e api resources)”. Não mover a validação para os Services nem criar FormRequests ou Resources nesta revisão.
-- Os Controllers estão em `app/Http/Controllers/Api/`, no namespace `App\Http\Controllers\Api`, importam o Controller base e usam construtor em várias linhas. Os resultados são guardados em variáveis antes de `response()->json()`; não há tipos de retorno nas ações, conforme o exemplo.
-- `index()` chama `listAll()`; `show(int $id)` chama `findById($id)`; `store()` e `update()` repassam `$request->all()`. `update()` e `destroy()` também recebem IDs inteiros.
-- Os quatro Services foram adaptados aos novos nomes e assinaturas. `findOrFail()` busca os registros e produz 404 para IDs inexistentes, em vez do route model binding implícito anterior.
-- `routes/api.php` importa os Controllers de `Api` e registra quatro chamadas `Route::apiResource()`, com parâmetro `{id}`. Os caminhos públicos e os status de sucesso continuam os mesmos.
-- Mantidas as contagens de produtos, os relacionamentos e as transações. Produtos continuam sendo desativados. Categorias, plataformas e gêneros continuam bloqueando a exclusão quando utilizados, com 422; isso é uma regra de negócio, não a validação dos campos de entrada adiada.
-- As restrições das migrations e os campos `$fillable` permanecem. Nesta fase, entrada inválida não tem garantia de resposta 422: pode ser aceita ou provocar erro do banco. Enviar dados válidos nos testes manuais até implementar os FormRequests.
-- Os três testes específicos de validação continuam nos arquivos, marcados com `markTestSkipped()` e motivo explícito. Retirar essas marcações ao implementar as regras da etapa 7. Não apresentar esses testes como aprovados.
-- Verificado: Pint passou nos 11 arquivos PHP alterados; suíte em SQLite em memória com **17 testes aprovados, 254 asserções e 3 ignorados**. Nenhum cadastro de teste foi gravado no MySQL por essa suíte.
-- Atualizados os guias do CRUD e este contexto. Próximo passo continua sendo a etapa 7, somente quando solicitado.
-
-## Resultado original da etapa 6 — antes da revisão acima
-
-- Criados `app/Http/Controllers/ProductController.php`, `app/Services/ProductService.php` e `routes/api.php`; `bootstrap/app.php` carrega a API. Não foi instalado Sanctum nem executado `install:api`.
-- Rotas: GET e POST `/api/products`; GET, PUT/PATCH e DELETE `/api/products/{product}`. O Laravel faz route model binding e retorna 404 para IDs inexistentes.
-- Controller com validação inline e respostas JSON, sem Resources ou FormRequests. Service concentra consultas, gravações e associações. Listagem sem paginação ou filtros nesta parte.
-- Cadastro exige plataforma existente e ao menos uma categoria; gêneros são opcionais. Preço não negativo com até duas casas decimais; estoque inteiro não negativo. IDs inexistentes e repetidos nas listas são rejeitados. A validação existente será organizada em FormRequests na etapa 7.
-- Cadastro e atualização usam transação e `sync()` nas associações. Listas omitidas em atualização são preservadas; listas enviadas substituem as atuais, e `genre_ids: []` remove gêneros. PUT e PATCH aceitam atualização parcial nesta versão.
-- DELETE desativa com `is_active = false`; não remove linha ou vínculos. GET lista ativos e inativos para conferir a administração. Consultar um inativo retorna 200 e permite reativação por PATCH. A listagem pública e as permissões virão nas etapas correspondentes.
-- As rotas ainda não exigem login ou perfil administrativo; essa parte permanece para a etapa 8, conforme o roteiro. Não há CRUD de usuários ou exposição de senhas nesta API.
-- Acrescentado `tests/Feature/ProductApiTest.php` com 10 testes. Na entrega inicial de produtos, a suíte passou com 14 testes e 156 asserções. Após a ampliação do catálogo, passou com 20 testes e 336 asserções em SQLite em memória.
-- Pint passou nos cinco arquivos PHP desta parte; sintaxe verificada no Controller, Service e teste.
-- Verificação HTTP pelo computador: listagem 200 com 7 produtos, ID inexistente 404 e POST vazio 422. Não houve gravação no MySQL nessas requisições; as mutações dos testes ocorreram somente em memória.
-- Após a nova autorização, criados `CategoryController`, `PlatformController`, `GenreController` e seus três Services. Validam `name` como texto obrigatório no POST, até 255 caracteres e único na tabela; atualização permite manter o próprio nome. As respostas incluem `products_count`.
-- Os três Services rejeitam exclusão enquanto houver produtos associados, com 422 e a chave `category`, `platform` ou `genre`. Cadastros sem vínculos são removidos fisicamente com 204. Produtos continuam sendo desativados com `is_active`.
-- `routes/api.php` usa `Route::apiResources()` e registra 20 rotas para os quatro Controllers. Não foram alterados Models, migrations ou dados de seeders nessa ampliação.
-- Criado `tests/Feature/CatalogApiTest.php` com seis testes que percorrem os três cadastros. A suíte passou com 20 testes e 336 asserções. Pint passou nos oito arquivos da ampliação.
-- Verificação HTTP: GET de cada cadastro retornou 200, preservando 7 produtos, 3 categorias, 3 plataformas e 4 gêneros. Os quatro POSTs vazios retornaram 422. Não houve gravação no MySQL nessas verificações.
-- Guia geral em `docs/crud-catalog.md`; percurso de todas as requisições de produtos em `docs/crud-products.md`, desde `public/index.php` até consultas SQL e resposta, incluindo 404, 422 e 204 vazio. O checklist manual fica para o estudante repetir.
-
-## Resultado da etapa 5 — concluída no Windows
-
-- Foram criados `UserSeeder`, `CategorySeeder`, `PlatformSeeder`, `GenreSeeder`, `ProductSeeder` e `AddressSeeder`, chamados em ordem pelo `DatabaseSeeder`, dentro de uma transação.
-- `firstOrCreate` e `firstOrNew` preservam registros encontrados. `syncWithoutDetaching` acrescenta as associações sem apagar outros vínculos. As identificações dos exemplos e suas limitações estão em `docs/seeders.md`.
-- Contas locais de demonstração: `admin@ticogames.test` e `customer@ticogames.test`, com senha inicial `password`. Isso não implementa autenticação; não usar como credenciais de produção.
-- Criada a imagem genérica `public/images/product-placeholder.svg` para os exemplos. Preços e estoques são fictícios.
-- Neste computador o MySQL ainda não tinha a estrutura registrada no ambiente Linux. As 15 migrations existentes foram aplicadas, sem recriar ou apagar tabelas.
-- A carga foi executada duas vezes no MySQL 8.4.13. As contagens permaneceram em 2 usuários, 2 endereços, 3 categorias, 3 plataformas, 4 gêneros, 7 produtos, 11 vínculos de categorias e 7 de gêneros. Carrinhos e pedidos seguem vazios.
-- `tests/Feature/DatabaseSeederTest.php` acrescenta dois testes de integração. A suíte passou com 4 testes e 41 asserções, em SQLite em memória. Foram verificadas as relações e a preservação de alterações após repetir os seeders. Nenhuma alteração dos testes foi aplicada ao MySQL.
-- Sintaxe PHP e Pint passaram nos sete arquivos de seeders e no teste novo.
-- O Docker Desktop 4.97.0 falhou em `docker-secrets-engine/engine.sock` ao ser iniciado pelo terminal. O encerramento normal falhou; foram identificados e encerrados apenas os processos da inicialização com erro e o Docker foi aberto pelo Windows Explorer. O engine voltou a responder e os serviços do projeto ficaram saudáveis. Não houve exclusão de diretórios, reset, reinstalação ou remoção de volumes. A causa específica não foi comprovada; a recuperação vale para esta execução. Se reaparecer, prefira abrir pelo menu Iniciar.
-- Não foram criados Controllers, Services, Resources, FormRequests, autenticação ou telas. Próxima etapa: 6, apenas quando o usuário pedir.
-
-## O que foi feito até aqui
-
-1. Revisados os Dockerfiles, o `compose.yaml` e os dois `.dockerignore`. As exclusões foram ampliadas para credenciais, dados locais, dependências e arquivos de desenvolvimento. O usuário pediu simplicidade depois dessa revisão; não ampliar essas configurações sem necessidade.
-2. Criada a modelagem em `docs/data-model.md`.
-3. Aproveitado o projeto Laravel já existente, sem reinstalar o framework nem adicionar Laravel Sail.
-4. Simplificado e comentado o `.env.example`, com nome `TicoGames`, conexão MySQL, sessões e cache em arquivos, tarefas síncronas e emails no log.
-5. Criado o `.env` local a partir do exemplo e gerada a chave com `php artisan key:generate`. O `.env` é ignorado pelo Git; não copiar a chave para este documento.
-6. Criado o roteiro em português no `README.md`, substituindo o texto padrão do Laravel.
-7. Iniciado o Docker Desktop, construída a imagem PHP e iniciados os serviços `mysql` e `php`.
-8. Instaladas as dependências do Composer dentro do volume `php_vendor`.
-9. Limpado o cache de configuração e executadas as verificações da etapa 2.
-10. Retomada e concluída a etapa 1 com as novas respostas: várias categorias por produto, busca por gênero e plataforma, pagamento simulado confirmado pelo cliente, somente três status e nenhum registro da forma de pagamento. Atualizados `docs/data-model.md`, `README.md` e este arquivo; `git diff --check` passou. Não foram executados testes de funcionalidades nesta revisão documental.
-11. Os documentos de continuidade foram movidos pelo usuário para `docs/README.md` e `docs/gpt.md`; manter essa localização.
-12. Revisada a etapa 2 na pasta atual: criado o `.env` a partir do exemplo e gerada sua chave. Os contêineres ativos apontavam para uma cópia antiga na lixeira e foram recriados com `docker compose up -d --build mysql php`, preservando os volumes. A montagem atual é `/home/joaoantonio/TicoGames` em `/app`, com dependências no volume `php_vendor`.
-13. Acrescentados `libicu-dev` e a extensão `intl` ao `Dockerfile.dev` para o comando `db:show`. Configurado somente `/app` como diretório confiável do Git dentro da imagem, evitando o aviso de proprietário diferente durante o uso do Composer. O arquivo possui comentários em português.
-14. Iniciada a etapa 3 pelo `User`, mantendo os campos `name`, `email` e `password` em `$fillable`, ocultando senha e token, preservando os casts de data e hash e os relacionamentos com endereços, carrinho e pedidos. Os comentários explicam cada bloco; `role` permanece fora de `$fillable`, e seu padrão `customer` será definido na migration. `php -l app/Models/User.php` e `git diff --check` passaram. As solicitações para executar Pint e verificações em memória no Docker foram recusadas pelo usuário; essas verificações não executaram. Não foram criadas tabelas nem dados.
-15. O usuário pediu usar somente seeders. Removidos o import da `UserFactory` e o trait `HasFactory` do `User`. Os demais Models serão ajustados individualmente, mantendo a regra de um por vez. Nenhum seeder foi implementado nesta etapa.
-16. Revisado somente o `Address`: retirado `HasFactory`, comentados os campos do endereço e explicado `belongsTo(User::class)`, que liga `addresses.user_id` a `users.id`. CEP e número serão colunas de texto, e complemento será nullable na migration. Não foram necessários casts personalizados para os campos de endereço. `php -l app/Models/Address.php` e `git diff --check` passaram. Gravação e consultas no banco permanecem pendentes das migrations da etapa 4. Nenhum outro Model foi alterado nessa revisão.
-17. Revisado somente o `Category`: retirado `HasFactory`, mantido `name` em `$fillable` e substituído o relacionamento antigo `hasMany` por `belongsToMany(Product::class)`, conforme a regra de várias categorias por produto. Por convenção, a ligação usa `category_product`, com `category_id` e `product_id`, sem timestamps. A unicidade do nome e as tabelas serão definidas nas migrations. `php -l app/Models/Category.php` e `git diff --check` passaram. A relação inversa será ajustada na revisão do `Product`; os testes com dados dependem dessa revisão e das migrations.
-18. Revisado somente o `Platform`: retirado `HasFactory`, mantido `name` em `$fillable` e explicado `hasMany(Product::class)`, que liga `platforms.id` a `products.platform_id`. Cada versão de produto pertence a uma plataforma; uma plataforma reúne vários jogos e consoles. A unicidade do nome e as tabelas serão definidas nas migrations. `php -l app/Models/Platform.php` e `git diff --check` passaram. As consultas com dados ficam pendentes das migrations da etapa 4.
-19. Revisado somente o `Genre`: retirado `HasFactory`, mantido `name` em `$fillable` e explicado `belongsToMany(Product::class)`. A tabela de ligação `genre_product` terá `genre_id` e `product_id`, sem timestamps. Um jogo pode ter vários gêneros e consoles podem ficar sem gêneros. A unicidade do nome e as tabelas serão definidas nas migrations. `php -l app/Models/Genre.php` e `git diff --check` passaram. As consultas com dados ficam pendentes das migrations da etapa 4.
-20. Revisado somente o `Product`: retirado `HasFactory` e removido `category_id` de `$fillable`. A antiga relação `category()` foi substituída por `categories()` com `belongsToMany`, via `category_product`. Comentados os campos e as relações com plataforma, gêneros, itens de carrinho e itens de pedido. Mantidos os casts `price => decimal:2`, `stock => integer` e `is_active => boolean`. O cast decimal retorna texto com duas casas; não implementa cálculos ou baixa de estoque. `php -l app/Models/Product.php` e `git diff --check` passaram, e os pares de relações com `Category`, `Platform` e `Genre` foram conferidos no código. Consultas, persistência e conversões em execução ainda não foram testadas nesta revisão.
-21. Revisado somente o `Cart`: retirado `HasFactory`, mantido `user_id` em `$fillable` e comentadas as relações `user()` com `belongsTo` e `items()` com `hasMany`. O carrinho guarda o dono; produtos e quantidades ficam em `cart_items`. A unicidade de `carts.user_id` será definida na migration. `php -l app/Models/Cart.php` e `git diff --check` passaram; os vínculos com `User.cart()` e o rascunho de `CartItem.cart()` foram conferidos no código. Nenhum dado foi gravado, e a lógica de incorporação do carrinho de visitante permanece para as etapas seguintes.
-22. Revisado somente o `CartItem`: retirado `HasFactory`, comentados `cart_id`, `product_id` e `quantity`, mantido o cast inteiro de `quantity` e explicadas as relações `belongsTo` com carrinho e produto. O preço vem do produto atual; adicionar itens não reserva estoque. A unicidade do par `cart_id` e `product_id` será criada na migration, e a validação de quantidade positiva virá nas etapas próprias. `php -l app/Models/CartItem.php` e `git diff --check` passaram. Não foram executados testes de persistência ou conversões em execução nesta revisão.
-23. A pedido do usuário, revisados `Order` e `OrderItem` juntos, concluindo a etapa 3. Retirado `HasFactory` dos dois e comentados todos os campos, casts e relacionamentos. `Order` guarda usuário, status, total e os campos de cópia do endereço, com `user()` e `items()`. `OrderItem` guarda pedido, produto, nome e preço históricos e quantidade, com `order()` e `product()`. Total e preço unitário usam `decimal:2`; quantidade usa `integer`. A cópia dos dados, o cálculo do total e as transições de status serão implementados no fluxo de pedidos, não pelos Models. `php -l` passou nos 10 Models; `git diff --check` passou; não há referência a factories em `app/Models`. Não foram criadas migrations, seeders, funcionalidades de autenticação ou fluxo de pedidos.
-24. Concluída a etapa 4: criadas 12 migrations datadas de `2026_10_28_000001` a `2026_10_28_000012`, mantendo as 3 padrão. Acrescentado `users.role` em migration separada; criadas as 11 tabelas de negócio restantes, com chaves estrangeiras, índices únicos, chaves compostas nas associações, enum de status, valores padrão e tipos alinhados aos Models. As 15 migrations foram aplicadas no MySQL, todas no lote 1. Criado o guia `docs/migrations.md`, com exemplos e explicações dos conceitos novos. Não foram criados seeders ou CRUDs.
-
-## Resultado da etapa 4 — concluída
-
-- `php -l` passou nas 15 migrations e Pint passou nos 12 arquivos novos; `git diff --check` passou.
-- Aplicação, rollback e reaplicação passaram em SQLite em memória. O rollback das tabelas do MySQL do projeto não foi executado.
-- `php artisan migrate:status`: 15 migrations executadas, lote 1. Executar `migrate` novamente informou `Nothing to migrate`.
-- `php artisan db:show --counts`: 20 tabelas, todas sem dados, exceto `migrations` com 15 registros.
-- Um script temporário no MySQL verificou relações, casts, valores padrão, campos de endereço, índices únicos, chaves estrangeiras, estoque sem sinal, rejeição de status inválido, cascatas e restrições de exclusão. As cópias históricas, preenchidas manualmente para o teste, permaneceram independentes do catálogo e do endereço salvo.
-- Os dados usados no script foram desfeitos por uma transação. Não foram criadas factories, seeders nem testes permanentes nessa verificação.
-- A suíte inicial continua com 2 testes passando e 2 asserções; ela é separada das verificações do esquema.
-- `unsignedInteger` aceita zero. Quantidade mínima 1, preços não negativos e pelo menos uma categoria por produto serão validados nos FormRequests da etapa 7 e usados pelos serviços; não são totalmente impostos por essas migrations.
-- `cascadeOnDelete` limpa endereços/carrinhos da conta, itens de carrinho e associações. `restrictOnDelete` preserva referências a plataformas, produtos e histórico de pedidos. Excluir um usuário com pedidos ou um pedido com itens é bloqueado.
-- Próxima etapa: 5, Seeders, somente após “próximo”.
-
-## Resultado da etapa 3 — concluída
-
-- `User`: revisado e comentado. Sintaxe PHP verificada.
-- `Address`: revisado e comentado, sem factories. Sintaxe PHP verificada; gravação e consultas do relacionamento dependem das migrations.
-- `Category`: revisado e comentado, sem factories. Sintaxe PHP verificada; relação com produtos definida como muitos para muitos, através de `category_product`.
-- `Platform`: revisado e comentado, sem factories. Sintaxe PHP verificada; relação com produtos definida como um para muitos, por `products.platform_id`.
-- `Genre`: revisado e comentado, sem factories. Sintaxe PHP verificada; relação com produtos definida como muitos para muitos, através de `genre_product`.
-- `Product`: revisado e comentado, sem factories. Sintaxe PHP verificada; plataforma como `belongsTo`, categorias e gêneros como `belongsToMany`, itens de carrinho e pedido como `hasMany`, com casts de preço, estoque e ativo.
-- `Cart`: revisado e comentado, sem factories. Sintaxe PHP verificada; pertence a um usuário e possui vários itens. Um carrinho por usuário será garantido na migration.
-- `CartItem`: revisado e comentado, sem factories. Sintaxe PHP verificada; pertence a um carrinho e a um produto, com quantidade convertida para inteiro. A unicidade de produto por carrinho será garantida na migration.
-- `Order`: revisado e comentado, sem factories. Sintaxe PHP verificada; pertence a um usuário, possui vários itens e tem campos para guardar o endereço histórico e o total decimal.
-- `OrderItem`: revisado e comentado, sem factories. Sintaxe PHP verificada; pertence a um pedido e a um produto e tem campos para guardar nome e preço históricos e quantidade inteira.
-- A etapa 3 entregou os 10 Models. As tabelas foram criadas depois, na etapa 4.
-- Verificação de formatação pendente do `User`: Pint. As verificações de hash da senha, ocultação de senha/token no JSON e proteção de `role` serão retomadas na etapa 8, conforme a orientação de adiar o trabalho específico de autenticação e segurança.
-- Na etapa 4 foram verificadas relações persistidas e a unicidade de `carts.user_id`, complementando a revisão de código dos Models.
-
-## Verificações da etapa 2 na pasta atual — 28/10/2026
-
-- `docker compose config --quiet` e `composer validate --no-check-publish --no-interaction`: configurações válidas.
-- Serviços `mysql` e `php`: saudáveis, com o código da pasta atual montado no contêiner PHP.
-- Laravel **12.70.2**, PHP **8.4.27** e MySQL **8.4.10** verificados no ambiente atual.
-- `composer check-platform-reqs`: requisitos atendidos; extensão `intl` carregada.
-- `php artisan db:show`: conexão MySQL com `ticogames`, com **zero tabelas**.
-- `php artisan test`: **2 testes passaram**, com **2 asserções**. São os exemplos iniciais e não validam as funcionalidades da loja.
-- `http://localhost:8000/` e `http://localhost:8000/up`: HTTP **200** pelo computador.
-- `.env` preenchido e ignorado pelo Git, sem exposição da chave; `git diff --check` passou.
-- Nenhuma migration ou seeder foi criado ou executado nesta etapa. O frontend não foi alterado.
-
-Os resultados acima foram obtidos após corrigir a montagem. Os testes executados antes da correção atingiram a cópia antiga e não foram usados para concluir a etapa atual.
-
-## Verificações já realizadas no computador de origem
-
-- `docker compose config --quiet`: configuração válida.
-- `composer check-platform-reqs`: requisitos atendidos.
-- Laravel **12.70.2**, PHP **8.4.27** e MySQL **8.4.13** nas versões efetivamente testadas.
-- `php artisan db:show`: conexão MySQL com o banco `ticogames`, com **zero tabelas**.
-- `php artisan test`: **2 testes passaram**, com 2 asserções. São os exemplos iniciais; não comprovam as funcionalidades da loja.
-- `http://localhost:8000` e `http://localhost:8000/up`: HTTP **200** pelo computador de origem.
-- Contêineres `mysql` e `php`: saudáveis na última verificação.
-- `.env` ignorado pelo Git e `git diff --check` sem erros de whitespace.
-
-Esses são resultados anteriores, não uma garantia sobre o ambiente atual ou outro computador. A rota `/up` testa a inicialização do Laravel; a conexão com o banco foi verificada separadamente.
-
-## Estado do código
-
-- Os 10 Models estão revisados e comentados, com campos e relacionamentos alinhados à modelagem e sem `HasFactory`. A sintaxe de todos passou em `php -l`.
-- Relações persistidas, casts e campos de cópia histórica foram verificados com dados temporários na etapa 4. O preenchimento automático das cópias, o cálculo de totais e o fluxo de criação e pagamento dos pedidos ainda dependem das etapas de CRUD.
-- A etapa 1 alterou documentos. A etapa 2 ajustou o `Dockerfile.dev`, preparou o `.env` local e corrigiu a montagem do ambiente. Nenhuma funcionalidade da loja foi implementada.
-- Existem 15 migrations, todas aplicadas no MySQL: as 3 padrão e as 12 novas da etapa 4. A carga inicial foi aplicada na etapa 5; as contagens estão registradas acima.
-- `database/seeders/DatabaseSeeder.php` chama seis seeders, sem factories. A carga preenche catálogo, contas e endereços fictícios, preservando registros encontrados.
-- A rota `/` ainda mostra a página padrão do Laravel.
-- O Vue está inicializado, mas as telas da loja não foram implementadas. Seu serviço não foi necessário para concluir a etapa 2.
-- Os quatro CRUDs do catálogo estão implementados. Os fluxos de contas, endereços, carrinho, pedidos, pagamento simulado e Sanctum permanecem pendentes.
-- Na configuração original, o Compose usava `Dockerfile.dev` para PHP e `front-end/Dockerfile.dev` para Vue.
-
-## Continuar em outro computador
-
-Copiar ou clonar o projeto incluindo `docs/gpt.md`, `docs/README.md` e `docs/data-model.md`. Este arquivo transfere o contexto, não o histórico completo do chat nem o ambiente Docker.
-
-As imagens, os volumes do Docker e o `.env` não são transportados pelo Git. No outro computador, siga `docs/README.md` para preparar o ambiente local. Não envie segredos ao repositório. Execute os comandos na raiz do projeto, onde está `compose.yaml`.
-
-Com Docker Desktop aberto, execute no PowerShell, na raiz do projeto:
-
-```powershell
-# Cria o arquivo local somente se ele ainda não existir.
-if (-not (Test-Path -LiteralPath .env)) {
-    Copy-Item -LiteralPath api/.env.example -Destination .env
-}
-
-# Prepara todos os serviços e substitui os contêineres antigos.
-docker compose up -d --build --remove-orphans --wait
-
-# Acompanha a instalação; Ctrl+C fecha apenas a visualização dos logs.
-docker compose logs -f api
-```
-
-Depois que o log informar que o servidor iniciou, encerre a visualização com Ctrl+C. Se `APP_KEY` estiver vazia, siga o bloco de geração e gravação da chave para PowerShell em `docs/README.md`. Em seguida:
-
-```powershell
-# Atualiza as configurações carregadas e verifica o ambiente.
-docker compose exec api php artisan config:clear
-docker compose up -d --force-recreate --no-deps --wait api
-docker compose exec api php artisan --version
-docker compose exec api php artisan db:show
-docker compose exec api composer test
-```
-
-Em um banco novo, reproduza a estrutura com `docker compose exec api php artisan migrate`, conforme `docs/migrations.md`, e carregue os exemplos com `docker compose exec api php artisan db:seed`, conforme `docs/seeders.md`. O comando `composer run setup` não é o roteiro usado neste projeto.
-
-## Prompt reutilizável — Controller e Service linha por linha
-
-Registrado a pedido do usuário em 29/10/2026. Aplicar quando ele pedir novamente esse tipo de explicação, sem iniciar outra etapa ou alterar o código por conta própria.
-
-Pedido original: “pode me explicar um controller que tenha mais ou menos o que todos tem linha por linha e um service do mesmo jeito”.
-
-Prompt para copiar e reutilizar:
-
-> Leia os arquivos atuais deste projeto e escolha um Controller e seu Service que representem o padrão usado nos demais CRUDs. Use CategoryController e CategoryService se ainda forem bons exemplos. Explique em português, linha por linha, para que eu consiga entender e apresentar o projeto para uma banca. Não altere o código nem avance de etapa.
->
-> Antes do código, explique as responsabilidades do Controller, do Service e do Model. Mostre links dos arquivos e utilize os números reais das linhas. Explique todas as linhas com código; informe de uma vez o papel dos comentários, linhas em branco e chaves.
->
-> Detalhe namespace, imports use, classe, herança, construtor, injeção de dependência, propriedades e visibilidade public/private. Explique também $this, variáveis, parâmetros, tipos de retorno, return, ->, ::, arrays e chamadas encadeadas. Não apenas repita os comentários: mostre o que cada expressão faz e em qual ordem ela é executada.
->
-> Percorra as cinco ações: listar, consultar por ID, cadastrar, atualizar e excluir ou desativar. Explique a validação, o route model binding, as regras de unicidade e ignore, as consultas do Eloquent, as contagens de relacionamentos, a criação, a atualização, o refresh e as exceções que aparecerem no exemplo. Quando uma expressão juntar várias operações, desmonte-a em passos equivalentes apenas para explicar, sem editar o arquivo.
->
-> Relacione cada ação ao método HTTP, à URL, ao corpo enviado, ao método do Controller, ao método do Service, à operação no banco e à resposta recebida no Thunder Client. Explique o caminho completo de ida e volta e onde ele para em caso de erro. Mostre os status 200, 201, 204, 404 e 422 quando aplicáveis e indique quando a resposta não tem corpo. Use exemplos JSON; se resumir uma resposta, avise quais campos foram omitidos.
->
-> Ao final, mostre o que se repete nos outros CRUDs e quais diferenças exigem atenção, como relacionamentos, transações e desativação de produtos. Termine com um checklist curto para eu conferir o comportamento no Thunder Client. Mantenha os nomes do código em inglês e as explicações em português.
-
-Forma curta de pedir novamente:
-
-> Explique um Controller e seu Service linha por linha, seguindo o prompt reutilizável salvo em docs/gpt.md.
-
-## Prompt reutilizável — Sintaxe dos Services e do Sanctum
-
-> Leia as alterações recentes em `docs/`, especialmente `authentication.md`, `requests-resources.md` e este arquivo. Compare os exemplos com o código atual, resuma as mudanças que afetam a explicação e aponte divergências entre os docs e o repositório. Explique em português, com trechos reais e links para as linhas correspondentes. Mantenha a tarefa como uma leitura explicativa.
->
-> Use `CategoryController` e `CategoryService` para mostrar o caminho de uma requisição, da rota ao JSON. No cadastro de uma categoria, explique o que acontece primeiro em `$this->categoryService->create($request->validated())`. Detalhe o construtor com `private CategoryService $categoryService`, a injeção do Laravel, `$this`, `->`, `::`, tipos dos parâmetros e do retorno, `return` e `void`. Passe pelos cinco métodos do Service e mostre onde o FormRequest valida, onde o Eloquent acessa o banco e onde o Resource monta a resposta. Use `ProductService` para explicar `DB::transaction(function () use ($data) { ... })` e o que acontece se a gravação de um vínculo falhar.
->
-> Para o Sanctum, leia `api/bootstrap/app.php`, `api/config/sanctum.php`, `api/routes/api.php`, `AuthController` e `AuthService`. Explique por que o Controller passa tanto `$request->validated()` quanto `$request` ao Service, como `Auth::guard('web')->attempt()` valida as credenciais e como `regenerate()`, `invalidate()` e `regenerateToken()` afetam a sessão no login e no logout. Mostre o papel de `statefulApi()`, `auth:sanctum`, `RequireFrontendSession` e `admin`. Diferencie o cookie de sessão, o cookie `XSRF-TOKEN` e o cabeçalho `X-XSRF-TOKEN`.
->
-> Termine com o fluxo no Thunder Client usando o proxy em `http://localhost`. Percorra `/sanctum/csrf-cookie`, `/api/login`, `/api/me`, `/api/logout` e `/api/me` após sair. Explique quais cookies e cabeçalhos enviar e em que situações aparecem 401, 403, 419 e 422. Use o resultado de `/api/users` para mostrar a diferença entre visitante, cliente e administrador.
-
-Para pedir novamente, use esta frase.
-
-> Explique a sintaxe dos Services e do Sanctum seguindo o prompt em `docs/gpt.md`.
-
-## Mensagem sugerida para retomar
-
-> Leia docs/gpt.md, docs/README.md, docs/data-model.md, docs/migrations.md, docs/seeders.md, docs/crud-catalog.md e docs/crud-products.md. As etapas 1 a 5 e os quatro CRUDs básicos do catálogo estão concluídos. Os fluxos de contas, endereços, carrinho e pedidos ainda estão pendentes. Explique em português, comente o código e respeite uma etapa por vez. Quero entender todas as requisições e respostas de pelo menos um exemplo, do início ao fim. Espere eu dizer “próximo” antes de outra etapa. Resources e FormRequests ficam para a etapa 7; Sanctum e permissões para a etapa 8.
-
-## Registro local anterior à integração — etapa 7
-
-
-- O usuário esclareceu que esperava FormRequests e API Resources implementados. A etapa 7 foi concluída para os quatro CRUDs existentes, preservando o estilo de Controllers com IDs inteiros e variáveis locais.
-- Criados `StoreCategoryRequest`, `UpdateCategoryRequest`, `StorePlatformRequest`, `UpdatePlatformRequest`, `StoreGenreRequest`, `UpdateGenreRequest`, `StoreProductRequest` e `UpdateProductRequest` em `app/Http/Requests/`.
-- Categorias, plataformas e gêneros exigem nome textual, preenchido, até 255 caracteres e único na tabela. Na atualização, o próprio Model encontrado é passado a `ignore()`. Campos omitidos são preservados.
-- Produtos validam textos, plataforma existente, preço não negativo com até duas casas decimais, estoque inteiro não negativo, ao menos uma categoria e IDs existentes e distintos nas listas. Gêneros são opcionais. PUT e PATCH continuam permitindo atualização parcial.
-- As classes de atualização buscam o registro pelo ID da rota antes de validar, mantendo 404 mesmo se o corpo também for inválido. Os Services mantêm suas próprias buscas com `findOrFail()`.
-- `authorize()` retorna `true` nesta etapa. Não foi configurado Sanctum, login ou restrição por perfil; isso continua na etapa 8.
-- Criados `CategoryResource`, `PlatformResource`, `GenreResource` e `ProductResource` em `app/Http/Resources/`. Os quatro Controllers agora usam Requests específicos, `$request->validated()` e Resources nas respostas.
-- As respostas de sucesso agora têm `data`: listagens usam array e consultas/criações/atualizações usam objeto. Erros continuam com `message` e `errors`; DELETE continua 204 sem corpo. POST define 201 explicitamente.
-- Os Resources selecionam as colunas, formatam datas em ISO e usam `whenCounted()` e `whenLoaded()` para os dados já carregados pelo Service. Produtos não expõem `pivot`; preço permanece texto decimal e os casts de estoque e ativo são preservados.
-- Mantidas as transações de produtos e as regras de exclusão. Models, migrations e seeders não foram alterados nesta etapa.
-- Reativados os três testes de validação; ajustadas as asserções para `data` e acrescentados casos de atualização inválida, preservação de dados, omissão de `pivot` e prioridade do 404.
-- Verificado: **21 testes aprovados, 480 asserções e nenhum ignorado**, em SQLite em memória. Pint passou nos 21 arquivos PHP desta etapa. Não foram executados migrations ou seeders no MySQL.
-- Criado `docs/requests-resources.md` e atualizados os guias. Próximo passo: etapa 8, somente quando o usuário solicitar.
+Para alterar frontend, reconstrua sua imagem. Para configuração da API, limpe config e recrie o serviço. Use PHPUnit com SQLite em memória e QA para mutações de verificação. Não use migrate:fresh ou down -v na apresentação.

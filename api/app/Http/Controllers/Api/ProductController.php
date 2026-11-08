@@ -20,9 +20,26 @@ class ProductController extends Controller
     // GET /api/products: busca os cadastros e devolve a lista em JSON.
     public function index(Request $request)
     {
-        $products = $this->productService->listAll($request->user()?->role === 'admin');
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+            'category_id' => ['nullable', 'integer', 'min:1'],
+            'platform_id' => ['nullable', 'integer', 'min:1'],
+            'genre_id' => ['nullable', 'integer', 'min:1'],
+            'sort' => ['nullable', 'in:id,price_asc,price_desc,newest'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+        $products = $this->productService->listAll($request->user()?->role === 'admin', $filters);
 
         return ProductResource::collection($products);
+    }
+
+    public function upload(Request $request)
+    {
+        $request->validate(['image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120']]);
+        $path = $this->productService->upload($request->file('image'));
+
+        return response()->json(['data' => ['image_path' => $path]], 201);
     }
 
     // POST /api/products: o FormRequest valida antes de executar esta ação.

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // Cria os carrinhos persistentes das contas; visitantes usam localStorage.
+    // Cria os carrinhos persistentes das contas; visitantes são incluídos na migration de evolução.
     public function up(): void
     {
         Schema::create('carts', function (Blueprint $table) {

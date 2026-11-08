@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="TicoGames: jogos e consoles para sua próxima escolha.">
+    <meta name="theme-color" content="#0b3d91">
+    <title>Administração de produtos | TicoGames</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="assets/css/style.css?v=20261107-orders-label" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous" defer></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.21.0/dist/axios.min.js" integrity="sha384-p5EwRuz37ylAY9QrjGGIs9ngKVaIwppUFSourks9EIRp1CzoIDWoQkXrHxaAUhEB" crossorigin="anonymous" defer></script>
+    <script src="assets/js/config.js" defer></script>
+    <script src="assets/js/store.js?v=20261107-orders-label" defer></script>
+    <script src="assets/js/main.js?v=20261107-orders-label" defer></script>
+    <script src="assets/js/admin.js?v=20261107-orders-label" defer></script>
+  </head>
+  <body class="admin-page">
+    <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+    <header class="store-header sticky-top">
+
+<nav class="navbar navbar-expand-lg py-3" aria-label="Navegação principal">
+        <div class="container gap-3">
+          <a href="index.html" class="store-brand" aria-label="TicoGames, início"><i class="bi bi-controller " aria-hidden="true"></i><span>Tico<span>Games</span></span></a>
+          <div class="header-tools d-flex align-items-center gap-2 order-lg-3">
+            <a class="account-link d-none d-lg-block" href="login.html" data-account>Entrar ou cadastrar</a><button type="button" class="btn btn-sm btn-outline-light d-none d-lg-block" data-signed-in data-logout hidden>Sair</button>
+            <button type="button" class="btn header-icon d-lg-none" data-bs-toggle="collapse" data-bs-target="#header-search" aria-expanded="false" aria-controls="header-search" aria-label="Abrir pesquisa"><i class="bi bi-search " aria-hidden="true"></i></button>
+            <button type="button" class="btn header-icon position-relative ms-lg-3" data-bs-toggle="offcanvas" data-bs-target="#mini-cart" aria-controls="mini-cart" aria-label="Abrir carrinho"><i class="bi bi-bag " aria-hidden="true"></i><span class="cart-badge" data-cart-count>0</span></button>
+            <button type="button" class="btn header-icon d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#mobile-menu" aria-controls="mobile-menu" aria-label="Abrir menu"><i class="bi bi-list " aria-hidden="true"></i></button>
+          </div>
+<div class="collapse navbar-collapse header-search order-3 order-lg-2" id="header-search">
+            <form id="site-search-form" class="input-group" role="search" action="index.html#catalogo" method="get"><label for="site-search" class="visually-hidden">Pesquisar produtos</label><input id="site-search" name="q" type="search" class="form-control border-0" placeholder="Encontre seu próximo jogo ou console" autocomplete="off"><button type="submit" class="btn search-button" aria-label="Pesquisar produtos"><i class="bi bi-search " aria-hidden="true"></i></button>
+</form>
+</div>
+</div>
+</nav>
+<div class="category-nav d-none d-lg-block">
+        <nav class="container d-flex align-items-center gap-4" aria-label="Navegação do catálogo">
+          <a href="index.html#catalogo" class="category-link" data-category=""><i class="bi bi-grid me-2" aria-hidden="true"></i> Catálogo</a>
+          <a href="index.html?category=Jogos#catalogo" class="category-link" data-category="Jogos">Games</a>
+          <a href="index.html?category=Consoles#catalogo" class="category-link" data-category="Consoles">Consoles</a><a href="perfil.html" class="category-link" data-signed-in hidden>Meu perfil</a><a href="pedidos.html" class="category-link" data-signed-in hidden data-orders-link>Meus pedidos</a><a href="admin.html" class="category-link" data-admin-only hidden>Administração</a>
+        </nav>
+      </div>
+</header>
+<div class="offcanvas offcanvas-start" tabindex="-1" id="mobile-menu" aria-labelledby="mobile-menu-title">
+<div class="offcanvas-header border-bottom"><h2 class="offcanvas-title fs-5 fw-bold" id="mobile-menu-title">Explore a TicoGames</h2><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar menu"></button>
+</div>
+<div class="offcanvas-body p-0"><a href="login.html" class="mobile-account d-block p-4 text-decoration-none" data-account>Entrar ou cadastrar</a><a href="perfil.html" class="list-group-item p-3" data-signed-in hidden>Meu perfil</a><a href="pedidos.html" class="list-group-item p-3" data-signed-in hidden data-orders-link>Meus pedidos</a><button type="button" class="btn btn-link p-3" data-signed-in data-logout hidden>Sair da conta</button>
+<div class="list-group list-group-flush"><a class="list-group-item list-group-item-action py-3 d-flex align-items-center gap-3" href="index.html?category=Jogos#catalogo" data-category="Jogos"><i class="bi bi-controller " aria-hidden="true"></i>Games<i class="bi bi-chevron-right ms-auto small" aria-hidden="true"></i></a><a class="list-group-item list-group-item-action py-3 d-flex align-items-center gap-3" href="index.html?category=Consoles#catalogo" data-category="Consoles"><i class="bi bi-tv " aria-hidden="true"></i>Consoles<i class="bi bi-chevron-right ms-auto small" aria-hidden="true"></i></a><a class="list-group-item list-group-item-action py-3" href="carrinho.html"><i class="bi bi-bag me-2" aria-hidden="true"></i> Meu carrinho</a><a class="list-group-item list-group-item-action py-3" href="admin.html" data-admin-only hidden><i class="bi bi-sliders me-2" aria-hidden="true"></i> Administração</a>
+</div>
+</div>
+</div>
+<div id="global-status" class="container my-3" role="status" hidden></div>
+
+<main class="container page-content" id="main-content" tabindex="-1">
+<h1 class="h2 fw-bold">Administração</h1><p><a href="pedidos.html">Gerenciar pedidos de todos os clientes</a></p><p id="admin-status" role="status">Verificando acesso...</p><p id="admin-access" hidden><a href="login.html">Entrar com uma conta administrativa</a> · <a href="index.html">Voltar ao catálogo</a></p><div id="admin-content" hidden><section class="surface-panel p-4 my-4"><h2 class="h4">Categorias</h2><form id="admin-category-form" class="d-flex gap-2"><label class="visually-hidden" for="admin-category-name">Nova categoria</label><input id="admin-category-name" class="form-control" required maxlength="255" placeholder="Nova categoria"><button class="btn btn-accent" type="submit">Criar categoria</button></form><div id="admin-category-list"></div></section><section class="surface-panel my-4"><div class="panel-heading"><h2>Produtos</h2><button id="admin-new" class="btn btn-accent" type="button">Novo produto</button></div><div class="table-responsive"><table class="table product-table align-middle mb-0"><caption class="visually-hidden">Produtos cadastrados no backend, incluindo inativos.</caption><thead><tr><th scope="col">Produto</th><th scope="col">Plataforma</th><th scope="col">Categoria</th><th scope="col">Preço</th><th scope="col">Estoque</th><th scope="col">Status</th><th scope="col">Ações</th></tr></thead><tbody id="admin-products"></tbody></table></div><nav class="d-flex gap-3 align-items-center p-3" aria-label="Páginas de produtos"><button id="admin-prev" type="button" class="btn btn-light">Anterior</button><span id="admin-page"></span><button id="admin-next" type="button" class="btn btn-light">Próxima</button></nav></section><form method="post" action="/api/products" id="admin-form" class="surface-panel p-4" aria-describedby="admin-form-status"><h2 class="h4" id="admin-form-title">Novo produto</h2><p id="admin-form-status" role="status"></p><fieldset id="admin-fields" disabled><legend class="visually-hidden">Dados do produto</legend><div class="row g-3"><div class="col-md-6"><label class="form-label" for="admin-name">Nome</label><input class="form-control" id="admin-name" name="name" type="text" aria-describedby="admin-name-error" maxlength="255" required><div class="invalid-feedback" id="admin-name-error"></div></div>
+<div class="col-md-6"><label class="form-label" for="admin-platform_id">Plataforma</label><select class="form-select" id="admin-platform_id" name="platform_id" required aria-describedby="admin-platform_id-error"></select><div class="invalid-feedback" id="admin-platform_id-error"></div></div>
+<div class="col-12"><label class="form-label" for="admin-description">Descrição</label><textarea class="form-control" id="admin-description" name="description" maxlength="10000" required aria-describedby="admin-description-error" rows="4"></textarea><div class="invalid-feedback" id="admin-description-error"></div></div>
+<div class="col-md-6"><label class="form-label" for="admin-image_path">Caminho ou URL da imagem</label><input class="form-control" id="admin-image_path" name="image_path" type="text" aria-describedby="admin-image_path-error" maxlength="255" value="/images/product-placeholder.svg" placeholder="/images/product-placeholder.svg"><div class="invalid-feedback" id="admin-image_path-error"></div></div>
+<div class="col-md-6"><label class="form-label" for="admin-image">Enviar imagem (JPEG, PNG ou WebP, até 5 MB)</label><input type="file" id="admin-image" class="form-control" accept="image/jpeg,image/png,image/webp"></div>
+<div class="col-md-6"><label class="form-label" for="admin-price">Preço (R$)</label><input class="form-control" id="admin-price" name="price" type="number" aria-describedby="admin-price-error" min="0" max="99999999.99" step="0.01" required><div class="invalid-feedback" id="admin-price-error"></div></div>
+<div class="col-md-6"><label class="form-label" for="admin-stock">Estoque</label><input class="form-control" id="admin-stock" name="stock" type="number" aria-describedby="admin-stock-error" min="0" max="4294967295" step="1" required><div class="invalid-feedback" id="admin-stock-error"></div></div>
+<div class="col-md-6"><label class="form-check mt-4"><input class="form-check-input" id="admin-is_active" name="is_active" type="checkbox" checked> Produto ativo</label></div>
+<fieldset class="col-md-6"><legend class="fs-6">Categoria (selecione uma)</legend><div id="admin-categories" class="d-flex gap-3 flex-wrap"></div><p id="admin-category_id-error" class="small text-danger" role="status"></p></fieldset>
+<fieldset class="col-md-6"><legend class="fs-6">Gêneros (opcional)</legend><div id="admin-genres" class="d-flex gap-3 flex-wrap"></div><p id="admin-genre_ids-error" class="small text-danger" role="status"></p></fieldset></div><div class="d-flex gap-3 mt-4"><button id="admin-save" class="btn btn-accent" type="submit">Salvar produto</button><button id="admin-cancel" class="btn btn-light" type="button">Cancelar edição</button></div></fieldset></form></div>
+</main>
+<footer class="site-footer mt-5">
+  <nav class="container py-4" aria-labelledby="footer-menu-title">
+    <h2 class="h6 fw-semibold mb-3" id="footer-menu-title">Sua próxima escolha</h2>
+    <ul class="footer-links">
+      <li><a href="index.html#catalogo" data-category="">Catálogo</a></li>
+      <li><a href="index.html?category=Jogos#catalogo" data-category="Jogos">Games</a></li>
+      <li><a href="index.html?category=Consoles#catalogo" data-category="Consoles">Consoles</a></li>
+    </ul>
+  </nav>
+</footer>
+<div class="offcanvas offcanvas-end" tabindex="-1" id="mini-cart" aria-labelledby="mini-cart-title">
+<div class="offcanvas-header border-bottom"><h2 class="offcanvas-title fs-5 fw-bold" id="mini-cart-title">Seu carrinho <span class="badge text-bg-light" data-cart-count>0</span></h2><button class="btn-close" type="button" data-bs-dismiss="offcanvas" aria-label="Fechar carrinho"></button></div>
+<div class="offcanvas-body d-flex flex-column"><div data-cart-items="mini" aria-live="polite">Carregando carrinho...</div>
+<div class="mt-auto pt-4"><p class="d-flex justify-content-between border-top pt-4"><span>Subtotal</span><strong data-cart-total>—</strong></p>
+<a class="btn btn-accent w-100" href="carrinho.html">Ver carrinho</a></div></div></div>
+<div class="modal fade" id="preview-modal" tabindex="-1" aria-labelledby="preview-modal-title" aria-describedby="preview-modal-text" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title fs-5" id="preview-modal-title">Confirmar ação</h2>
+            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+<div class="modal-body"><p id="preview-modal-text" class="mb-0"></p>
+</div>
+<div class="modal-footer">
+            <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Voltar</button>
+            <button class="btn btn-accent" id="preview-modal-confirm" type="button" data-bs-dismiss="modal">Entendi</button>
+          </div>
+</div>
+</div>
+</div>
+</body>
+</html>

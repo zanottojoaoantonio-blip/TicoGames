@@ -14,6 +14,8 @@ class UserSeeder extends Seeder
         $users = [
             ['name' => 'Admin TicoGames', 'email' => 'admin@ticogames.test', 'role' => 'admin'],
             ['name' => 'Cliente Exemplo', 'email' => 'customer@ticogames.test', 'role' => 'customer'],
+            ['name' => 'Ana Exemplo', 'email' => 'ana@ticogames.test', 'role' => 'customer'],
+            ['name' => 'Bruno Exemplo', 'email' => 'bruno@ticogames.test', 'role' => 'customer'],
         ];
 
         foreach ($users as $data) {

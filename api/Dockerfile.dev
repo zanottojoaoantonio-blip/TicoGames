@@ -8,6 +8,8 @@ RUN install-php-extensions pdo_mysql zip bcmath intl pcntl pdo_sqlite \
     && git config --system --add safe.directory /app \
     && cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
+COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 WORKDIR /app
 COPY Caddyfile /etc/frankenphp/Caddyfile
 

@@ -4,9 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\Product;
 use App\Models\User;
+use App\Services\CartService;
+use Database\Seeders\AddressSeeder;
+use Database\Seeders\CategorySeeder;
+use Database\Seeders\GenreSeeder;
+use Database\Seeders\PlatformSeeder;
+use Database\Seeders\ProductSeeder;
+use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class AccountAndCheckoutTest extends TestCase
@@ -16,8 +24,8 @@ class AccountAndCheckoutTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed();
-        // Simula a origem do Vue para ativar a sessão stateful do Sanctum.
+        $this->seed([UserSeeder::class, CategorySeeder::class, PlatformSeeder::class, GenreSeeder::class, ProductSeeder::class, AddressSeeder::class]);
+        // Simula a origem do frontend para ativar a sessão stateful do Sanctum.
         $this->withHeader('Origin', 'http://localhost');
     }
 
@@ -97,6 +105,59 @@ class AccountAndCheckoutTest extends TestCase
         $this->getJson('/api/me')->assertUnauthorized();
     }
 
+    public function test_api_login_merges_guest_cart_without_an_extra_request(): void
+    {
+        $product = Product::firstOrFail();
+        $service = app(CartService::class);
+        $service->add($service->findForUser($this->customer()), ['product_id' => $product->id, 'quantity' => 5]);
+        $this->postJson('/api/cart/items', ['product_id' => $product->id, 'quantity' => 5])->assertOk();
+        $guestToken = session('guest_cart_token');
+
+        $this->postJson('/api/login', ['email' => $this->customer()->email, 'password' => 'wrong'])
+            ->assertUnprocessable();
+        $this->assertGuest('web');
+        $this->assertDatabaseHas('carts', ['session_id' => hash('sha256', $guestToken)]);
+
+        $this->postJson('/api/login', ['email' => $this->customer()->email, 'password' => 'password'])
+            ->assertOk()->assertSessionMissing('guest_cart_token');
+        $this->getJson('/api/cart')->assertOk()->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.items.0.quantity', $product->stock)->assertJsonCount(1, 'data.warnings');
+        $this->assertDatabaseMissing('carts', ['session_id' => hash('sha256', $guestToken)]);
+        $this->getJson('/api/cart')->assertOk()->assertJsonPath('data.items.0.quantity', $product->stock)
+            ->assertJsonCount(0, 'data.warnings');
+        $this->postJson('/api/cart/merge')->assertOk()->assertJsonPath('data.items.0.quantity', $product->stock);
+    }
+
+    public function test_api_registration_merges_guest_cart_without_an_extra_request(): void
+    {
+        $product = Product::firstOrFail();
+        $this->postJson('/api/cart/items', ['product_id' => $product->id, 'quantity' => 2])->assertOk();
+        $guestToken = session('guest_cart_token');
+
+        $this->postJson('/api/register', ['name' => 'Nova Conta', 'email' => 'merge@test.test',
+            'password' => 'password123', 'password_confirmation' => 'password123'])
+            ->assertCreated()->assertSessionMissing('guest_cart_token');
+        $this->getJson('/api/cart')->assertOk()->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.items.0.quantity', 2);
+        $this->assertDatabaseMissing('carts', ['session_id' => hash('sha256', $guestToken)]);
+    }
+
+    public function test_failed_merge_does_not_authenticate_or_create_an_account(): void
+    {
+        $this->withSession(['guest_cart_token' => 'preserved-guest']);
+        $this->mock(CartService::class)->shouldReceive('merge')->twice()
+            ->andThrow(new HttpException(409, 'Limite do carrinho.'));
+
+        $this->postJson('/api/login', ['email' => $this->customer()->email, 'password' => 'password'])
+            ->assertConflict()->assertSessionHas('guest_cart_token', 'preserved-guest');
+        $this->assertGuest('web');
+        $this->postJson('/api/register', ['name' => 'Nova Conta', 'email' => 'failed-merge@test.test',
+            'password' => 'password123', 'password_confirmation' => 'password123'])
+            ->assertConflict()->assertSessionHas('guest_cart_token', 'preserved-guest');
+        $this->assertGuest('web');
+        $this->assertDatabaseMissing('users', ['email' => 'failed-merge@test.test']);
+    }
+
     public function test_registration_rejects_invalid_fields_without_creating_an_account(): void
     {
         $this->postJson('/api/register', [
@@ -106,7 +167,7 @@ class AccountAndCheckoutTest extends TestCase
             'password_confirmation' => 'different',
         ])->assertUnprocessable()->assertJsonValidationErrors(['name', 'email', 'password']);
 
-        $this->assertDatabaseCount('users', 2);
+        $this->assertDatabaseCount('users', 4);
         $this->assertGuest('web');
     }
 
@@ -156,7 +217,7 @@ class AccountAndCheckoutTest extends TestCase
     {
         $product = Product::firstOrFail();
         $product->update(['is_active' => false]);
-        $this->getJson('/api/products')->assertOk()->assertJsonCount(6, 'data');
+        $this->getJson('/api/products')->assertOk()->assertJsonPath('meta.total', 26);
         $this->getJson('/api/products/'.$product->id)->assertNotFound();
         $this->signIn(User::where('role', 'admin')->firstOrFail());
         $this->getJson('/api/products/'.$product->id)->assertOk();
@@ -186,10 +247,13 @@ class AccountAndCheckoutTest extends TestCase
         $product = Product::firstOrFail();
         $this->signIn($user);
         $this->postJson('/api/cart/items', ['product_id' => $product->id, 'quantity' => 1])->assertOk();
-        $response = $this->postJson('/api/cart/merge', ['items' => [['product_id' => $product->id, 'quantity' => 2]]])
+        $guest = app(CartService::class)->findForUser(null, 'test-guest');
+        app(CartService::class)->add($guest, ['product_id' => $product->id, 'quantity' => 2]);
+        $this->withSession(['guest_cart_token' => 'test-guest']);
+        $response = $this->postJson('/api/cart/merge')
             ->assertOk()->assertJsonCount(1, 'data.items')->assertJsonPath('data.items.0.quantity', 3);
         $id = $response->json('data.items.0.id');
-        $this->patchJson('/api/cart/items/'.$id, ['quantity' => 0])->assertUnprocessable();
+        $this->patchJson('/api/cart/items/'.$id, ['quantity' => -1])->assertUnprocessable();
         $this->postJson('/api/logout')->assertNoContent();
         $this->signIn($user);
         $this->getJson('/api/cart')->assertOk()->assertJsonPath('data.items.0.quantity', 3);
@@ -202,25 +266,43 @@ class AccountAndCheckoutTest extends TestCase
         $this->getJson('/api/cart')->assertJsonCount(0, 'data.items');
     }
 
-    public function test_invalid_merge_rolls_back_all_items(): void
+    public function test_guest_merge_clamps_stock_consumes_session_and_is_idempotent(): void
     {
-        $products = Product::take(2)->get();
-        $products[1]->update(['is_active' => false]);
+        $service = app(CartService::class);
+        $guest = $service->findForUser(null, 'merge-guest');
+        $product = Product::firstOrFail();
+        $service->add($guest, ['product_id' => $product->id, 'quantity' => 5]);
         $this->signIn($this->customer());
-        $this->postJson('/api/cart/merge', ['items' => [
-            ['product_id' => $products[0]->id, 'quantity' => 1],
-            ['product_id' => $products[1]->id, 'quantity' => 1],
-        ]])->assertUnprocessable();
-        $this->assertDatabaseCount('cart_items', 0);
+        $this->postJson('/api/cart/items', ['product_id' => $product->id, 'quantity' => 5])->assertOk();
+        $this->withSession(['guest_cart_token' => 'merge-guest']);
+        $this->postJson('/api/cart/merge')->assertOk()->assertJsonPath('data.items.0.quantity', $product->stock)
+            ->assertJsonCount(1, 'data.warnings')->assertSessionMissing('guest_cart_token');
+        $this->assertDatabaseMissing('carts', ['id' => $guest->id]);
+        $this->postJson('/api/cart/merge')->assertOk()->assertJsonPath('data.items.0.quantity', $product->stock);
     }
 
-    public function test_order_copies_history_and_payment_decrements_stock_once(): void
+    public function test_guest_cart_is_persisted_isolated_and_zero_removes_item(): void
+    {
+        $product = Product::firstOrFail();
+        $response = $this->postJson('/api/cart/items', ['product_id' => $product->id, 'quantity' => 2])->assertOk();
+        $id = $response->json('data.items.0.id');
+        $response->assertJsonPath('data.total', bcmul($product->price, '2', 2))->assertJsonPath('data.shipping_cost', '0.00')
+            ->assertJsonPath('data.items.0.subtotal', bcmul($product->price, '2', 2))->assertJsonMissingPath('data.session_id');
+        $this->getJson('/api/cart')->assertOk()->assertJsonPath('data.items.0.id', $id);
+        $token = session('guest_cart_token');
+        $this->withSession(['guest_cart_token' => 'another-visitor']);
+        $this->patchJson('/api/cart/items/'.$id, ['quantity' => 0])->assertNotFound();
+        $this->withSession(['guest_cart_token' => $token]);
+        $this->patchJson('/api/cart/items/'.$id, ['quantity' => 0])->assertOk()->assertJsonCount(0, 'data.items')->assertJsonPath('data.total', '0.00');
+    }
+
+    public function test_order_reserves_stock_and_copies_history_and_payment_does_not_decrement_again(): void
     {
         $user = $this->customer();
         $product = Product::firstOrFail();
         $expectedTotal = bcmul($product->price, '2', 2);
         $id = $this->checkout($user);
-        $this->assertSame($product->stock, $product->fresh()->stock);
+        $this->assertSame($product->stock - 2, $product->fresh()->stock);
         $this->assertDatabaseCount('cart_items', 0);
         $product->update(['name' => 'Nome alterado', 'price' => '1.00']);
         $user->addresses()->update(['city' => 'Cidade alterada']);
@@ -230,24 +312,39 @@ class AccountAndCheckoutTest extends TestCase
             ->assertJsonPath('data.shipping_city', 'São Paulo');
         $this->postJson('/api/orders/'.$id.'/pay')->assertOk()->assertJsonPath('data.status', 'paid');
         $this->assertSame($product->stock - 2, $product->fresh()->stock);
-        $this->postJson('/api/orders/'.$id.'/pay')->assertUnprocessable();
-        $this->postJson('/api/orders/'.$id.'/cancel')->assertUnprocessable();
+        $this->postJson('/api/orders/'.$id.'/pay')->assertConflict();
+        $this->postJson('/api/orders/'.$id.'/cancel')->assertConflict();
         $this->assertSame($product->stock - 2, $product->fresh()->stock);
         $this->deleteJson('/api/user')->assertUnprocessable();
     }
 
-    public function test_payment_rechecks_stock_and_cancellation_does_not_restock(): void
+    public function test_cancellation_restores_reserved_stock_once(): void
     {
         $user = $this->customer();
         $product = Product::firstOrFail();
         $id = $this->checkout($user);
-        $product->update(['stock' => 1]);
-        $this->postJson('/api/orders/'.$id.'/pay')->assertUnprocessable();
-        $this->getJson('/api/orders/'.$id)->assertJsonPath('data.status', 'pending_payment');
-        $this->assertSame(1, $product->fresh()->stock);
+        $this->assertSame($product->stock - 2, $product->fresh()->stock);
         $this->postJson('/api/orders/'.$id.'/cancel')->assertOk()->assertJsonPath('data.status', 'cancelled');
-        $this->postJson('/api/orders/'.$id.'/pay')->assertUnprocessable();
-        $this->assertSame(1, $product->fresh()->stock);
+        $this->assertSame($product->stock, $product->fresh()->stock);
+        $this->postJson('/api/orders/'.$id.'/cancel')->assertConflict();
+        $this->postJson('/api/orders/'.$id.'/pay')->assertConflict();
+        $this->assertSame($product->stock, $product->fresh()->stock);
+    }
+
+    public function test_admin_cannot_cancel_a_paid_order_or_restore_its_stock(): void
+    {
+        $user = $this->customer();
+        $product = Product::firstOrFail();
+        $id = $this->checkout($user);
+        $paidAt = $this->postJson('/api/orders/'.$id.'/pay')->assertOk()->json('data.paid_at');
+        $this->assertNotNull($paidAt);
+        $this->signIn(User::where('role', 'admin')->firstOrFail());
+        $stock = $product->fresh()->stock;
+        $this->postJson('/api/orders/'.$id.'/cancel')->assertConflict();
+        $this->patchJson('/api/orders/'.$id.'/status', ['status' => 'cancelled'])->assertConflict();
+        $this->getJson('/api/orders/'.$id)->assertOk()->assertJsonPath('data.status', 'paid')
+            ->assertJsonPath('data.paid_at', $paidAt);
+        $this->assertSame($stock, $product->fresh()->stock);
     }
 
     public function test_checkout_requires_own_address_and_orders_are_private(): void
@@ -257,14 +354,25 @@ class AccountAndCheckoutTest extends TestCase
         $this->signIn($this->other());
         $this->getJson('/api/orders')->assertJsonCount(0, 'data');
         $this->getJson('/api/orders/'.$id)->assertNotFound();
-        $this->postJson('/api/orders/'.$id.'/pay')->assertNotFound();
-        $this->postJson('/api/orders/'.$id.'/cancel')->assertNotFound();
+        $this->postJson('/api/orders/'.$id.'/pay')->assertForbidden();
+        $this->postJson('/api/orders/'.$id.'/cancel')->assertForbidden();
         $this->postJson('/api/orders', ['address_id' => $customer->addresses()->firstOrFail()->id])->assertNotFound();
         $this->signIn($customer);
         $this->postJson('/api/orders', ['address_id' => $customer->addresses()->firstOrFail()->id])->assertUnprocessable();
     }
 
-    public function test_payment_failure_preserves_stock_of_every_item(): void
+    public function test_checkout_without_a_cart_returns_422_without_changing_stock(): void
+    {
+        $user = $this->customer();
+        $product = Product::firstOrFail();
+        $this->signIn($user);
+        $this->postJson('/api/orders', ['address_id' => $user->addresses()->firstOrFail()->id])
+            ->assertUnprocessable()->assertJsonPath('message', 'O carrinho está vazio.');
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertSame($product->stock, $product->fresh()->stock);
+    }
+
+    public function test_checkout_failure_preserves_stock_of_every_item(): void
     {
         $user = $this->customer();
         $products = Product::take(2)->get();
@@ -272,13 +380,27 @@ class AccountAndCheckoutTest extends TestCase
         foreach ($products as $product) {
             $this->postJson('/api/cart/items', ['product_id' => $product->id, 'quantity' => 2])->assertOk();
         }
-        $id = $this->postJson('/api/orders', ['address_id' => $user->addresses()->firstOrFail()->id])
-            ->assertCreated()->json('data.id');
         $products[1]->update(['stock' => 1]);
-        $this->postJson('/api/orders/'.$id.'/pay')->assertUnprocessable();
+        $this->postJson('/api/orders', ['address_id' => $user->addresses()->firstOrFail()->id])->assertConflict();
         $this->assertSame($products[0]->stock, $products[0]->fresh()->stock);
         $this->assertSame(1, $products[1]->fresh()->stock);
-        $this->getJson('/api/orders/'.$id)->assertJsonPath('data.status', 'pending_payment');
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('cart_items', 2);
+    }
+
+    public function test_admin_filters_reads_and_advances_orders_but_cannot_skip_states(): void
+    {
+        $id = $this->checkout($this->customer());
+        $this->postJson('/api/orders/'.$id.'/pay')->assertOk()->assertJsonStructure(['data' => ['created_at', 'paid_at']]);
+        $this->patchJson('/api/orders/'.$id.'/status', ['status' => 'shipped'])->assertForbidden();
+        $this->signIn(User::where('role', 'admin')->firstOrFail());
+        $this->getJson('/api/orders?status=paid')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/orders/'.$id)->assertOk();
+        $this->patchJson('/api/orders/'.$id.'/status', ['status' => 'delivered'])->assertConflict();
+        $this->patchJson('/api/orders/'.$id.'/status', ['status' => 'shipped'])->assertOk();
+        $this->postJson('/api/orders/'.$id.'/cancel')->assertConflict();
+        $this->patchJson('/api/orders/'.$id.'/status', ['status' => 'delivered'])->assertOk();
+        $this->getJson('/api/orders?status=paid')->assertOk()->assertJsonCount(0, 'data');
     }
 
     public function test_checkout_rechecks_active_products_and_preserves_cart_on_failure(): void
@@ -288,7 +410,7 @@ class AccountAndCheckoutTest extends TestCase
         $this->signIn($user);
         $this->postJson('/api/cart/items', ['product_id' => $product->id, 'quantity' => 1])->assertOk();
         $product->update(['is_active' => false]);
-        $this->postJson('/api/orders', ['address_id' => $user->addresses()->firstOrFail()->id])->assertUnprocessable();
+        $this->postJson('/api/orders', ['address_id' => $user->addresses()->firstOrFail()->id])->assertConflict();
         $this->assertDatabaseCount('orders', 0);
         $this->assertDatabaseCount('cart_items', 1);
     }

@@ -24,7 +24,7 @@ class CatalogApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed();
+        $this->seed([\Database\Seeders\UserSeeder::class, \Database\Seeders\CategorySeeder::class, \Database\Seeders\PlatformSeeder::class, \Database\Seeders\GenreSeeder::class, \Database\Seeders\ProductSeeder::class, \Database\Seeders\AddressSeeder::class]);
         $this->actingAs(User::where('role', 'admin')->firstOrFail()); // Utiliza os exemplos reais, sem factories.
     }
 

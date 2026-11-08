@@ -1,6 +1,7 @@
 <?php
 
 // Organiza esta classe no grupo de Models da aplicação.
+
 namespace App\Models;
 
 // Importa a base do Eloquent e os tipos dos relacionamentos do carrinho.
@@ -8,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-// Guarda o carrinho de uma conta; visitantes usam localStorage no frontend.
+// Guarda o carrinho de uma conta; visitantes recebem sessão na migration de evolução.
 class Cart extends Model
 {
     /**
@@ -18,7 +19,9 @@ class Cart extends Model
      *
      * @var list<string>
      */
-    protected $fillable = ['user_id'];
+    protected $fillable = ['user_id', 'session_id'];
+
+    protected $hidden = ['session_id'];
 
     // Cada carrinho pertence a um usuário.
     // O Eloquent relaciona carts.user_id a users.id por convenção.

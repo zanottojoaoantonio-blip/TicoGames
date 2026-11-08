@@ -16,7 +16,8 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        $orders = $this->orderService->listAll($request->user());
+        $data = $request->validate(['status' => ['nullable', 'in:pending_payment,paid,shipped,delivered,cancelled']]);
+        $orders = $this->orderService->listAll($request->user(), $data['status'] ?? null);
 
         return OrderResource::collection($orders);
     }
@@ -40,6 +41,13 @@ class OrderController extends Controller
         $order = $this->orderService->decide($request->user(), $id, true);
 
         return new OrderResource($order);
+    }
+
+    public function status(Request $request, int $id)
+    {
+        $data = $request->validate(['status' => ['required', 'in:paid,shipped,delivered,cancelled']]);
+
+        return new OrderResource($this->orderService->transition($request->user(), $id, $data['status']));
     }
 
     public function cancel(Request $request, int $id)

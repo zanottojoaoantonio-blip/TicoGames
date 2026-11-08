@@ -29,6 +29,7 @@ services:
     volumes:
       - ./api:/app
       - api_vendor:/app/vendor
+      - api_uploads:/app/storage/app/public
     expose:
       - "8000"
     healthcheck:
@@ -41,6 +42,8 @@ services:
   frontend:
     build:
       context: ./front
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-}
     expose:
       - "80"
     healthcheck:
@@ -65,6 +68,68 @@ services:
       timeout: 3s
       retries: 10
 
+  qa-api:
+    profiles: [qa]
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    environment:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_KEY: 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
+      APP_URL: http://localhost:8081
+      FRONTEND_URL: http://localhost:8081
+      SANCTUM_STATEFUL_DOMAINS: localhost:8081
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /tmp/ticogames-qa.sqlite
+      DB_URL: ''
+      SESSION_DRIVER: file
+      SESSION_COOKIE: ticogames_qa_session
+      SESSION_SECURE_COOKIE: 'false'
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: log
+    volumes:
+      - ./api:/app:ro
+      - api_vendor:/app/vendor:ro
+    tmpfs:
+      - /app/storage
+      - /app/bootstrap/cache
+    networks:
+      qa:
+        aliases: [api]
+    command:
+      - sh
+      - -ec
+      - |
+        mkdir -p storage/framework/sessions storage/framework/cache/data storage/framework/views storage/logs storage/app/public
+        touch /tmp/ticogames-qa.sqlite
+        php artisan migrate --force --no-interaction
+        php artisan db:seed --force --no-interaction
+        exec frankenphp run --config /etc/frankenphp/Caddyfile --adapter caddyfile
+
+  qa-frontend:
+    profiles: [qa]
+    build:
+      context: ./front
+    networks:
+      qa:
+        aliases: [frontend]
+
+  qa-proxy:
+    profiles: [qa]
+    image: nginx:1.28-alpine
+    volumes:
+      - ./proxy/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - '127.0.0.1:8081:80'
+    depends_on: [qa-api, qa-frontend]
+    networks: [qa]
+
 volumes:
   mysql_data:
   api_vendor:
+  api_uploads:
+
+networks:
+  qa:

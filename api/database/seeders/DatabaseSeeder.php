@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
                 GenreSeeder::class, // Prepara os gêneros dos jogos.
                 ProductSeeder::class, // Cria produtos e suas associações.
                 AddressSeeder::class, // Acrescenta endereços ao cliente de exemplo.
+                StoreScenarioSeeder::class,
             ]);
         });
     }

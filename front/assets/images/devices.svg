@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="metal" x2="1" y2="1"><stop stop-color="#f7f9fc"/><stop offset="1" stop-color="#abb9c9"/></linearGradient>
+  </defs>
+  <symbol id="console" viewBox="0 0 600 440">
+    <ellipse cx="310" cy="377" rx="170" ry="15" fill="#dde5ed"/>
+    <path d="M283 45 388 62 401 356 285 369Z" fill="#142335"/>
+    <path d="M276 40 303 47 295 368 256 366Q279 225 276 40Z" fill="url(#metal)"/>
+    <path d="m389 50 35 6q-15 153 9 307l-40 8Z" fill="url(#metal)"/>
+    <path d="m311 57-7 288" stroke="#33a4f5" stroke-width="4"/>
+    <path d="M187 282c-30-7-42 7-49 34l-11 35q-4 24 15 23l27-22h63l28 22q19 2 15-22l-11-36c-8-28-22-40-49-33Z" fill="#eef2f8" stroke="#c2cfdb" stroke-width="3"/>
+    <path d="m158 307 20 0m-10-10v20" stroke="#344356" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="236" cy="307" r="5" fill="#6d8fcb"/><circle cx="249" cy="320" r="5" fill="#6d8fcb"/>
+    <circle cx="186" cy="337" r="12" fill="#28384b"/><circle cx="221" cy="337" r="12" fill="#28384b"/>
+  </symbol>
+  <symbol id="game" viewBox="0 0 600 440">
+    <ellipse cx="300" cy="381" rx="130" ry="13" fill="#e0e7ee"/>
+    <path d="m195 53 204 10v305l-204 10Z" fill="#164a8d"/>
+    <path d="m205 62 185 10v285l-185 11Z" fill="#112f45"/>
+    <path d="m205 62 185 10v34l-185-6Z" fill="#f0f3f8"/>
+    <path d="m205 300 66-124 46 64 73-83v200l-185 11Z" fill="#315953"/>
+    <circle cx="300" cy="190" r="49" fill="none" stroke="#d6b773" stroke-width="5"/>
+    <path d="m300 131 0 126m-27-98 27-28 28 30" stroke="#d6b773" stroke-width="4" fill="none"/>
+    <path d="m228 315 135-5m-118 15 100-3" stroke="#d8cba4" stroke-width="5"/>
+  </symbol>
+</svg>

@@ -13,16 +13,18 @@ class ProductResource extends JsonResource
         return [
             'id' => $this->id,
             'platform_id' => $this->platform_id,
+            'category_id' => $this->category_id,
+            'category' => new CategoryResource($this->whenLoaded('category')),
             'name' => $this->name,
             'description' => $this->description,
             // Os casts do Model mantêm preço como texto decimal e os demais tipos.
             'price' => $this->price,
-            'image_path' => $this->image_path,
+            'image_path' => preg_match('~^https?://~i', $this->image_path) ? $this->image_path : url($this->image_path),
             'stock' => $this->stock,
             'is_active' => $this->is_active,
             // whenLoaded() utiliza apenas os relacionamentos já carregados no Service.
             'platform' => new PlatformResource($this->whenLoaded('platform')),
-            'categories' => CategoryResource::collection($this->whenLoaded('categories')),
+            'categories' => CategoryResource::collection($this->whenLoaded('category', fn () => collect([$this->category]))),
             'genres' => GenreResource::collection($this->whenLoaded('genres')),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

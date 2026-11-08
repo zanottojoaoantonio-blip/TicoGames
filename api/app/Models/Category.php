@@ -1,11 +1,12 @@
 <?php
 
 // Organiza esta classe no grupo de Models da aplicação.
+
 namespace App\Models;
 
 // Importa a base do Eloquent e o tipo do relacionamento muitos para muitos.
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // Organiza os produtos em categorias, como Jogos e Consoles.
 class Category extends Model
@@ -18,10 +19,10 @@ class Category extends Model
      */
     protected $fillable = ['name'];
 
-    // Uma categoria tem vários produtos, e um produto pode ter várias categorias.
-    // Por convenção, o Eloquent usa category_product com category_id e product_id.
-    public function products(): BelongsToMany
+    // Uma categoria tem vários produtos; cada produto tem uma categoria.
+    // O vínculo fica em products.category_id.
+    public function products(): HasMany
     {
-        return $this->belongsToMany(Product::class);
+        return $this->hasMany(Product::class);
     }
 }

@@ -27,8 +27,7 @@ class StoreProductRequest extends FormRequest
             'stock' => ['required', 'integer', 'min:0', 'max:4294967295'],
             'is_active' => ['sometimes', 'boolean'],
             // Exige ao menos uma categoria e valida cada ID sem repetições.
-            'category_ids' => ['required', 'array', 'min:1'],
-            'category_ids.*' => ['required', 'integer', 'distinct', 'exists:categories,id'],
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
             // Gêneros são opcionais; consoles podem não ter nenhum.
             'genre_ids' => ['sometimes', 'array'],
             'genre_ids.*' => ['required', 'integer', 'distinct', 'exists:genres,id'],

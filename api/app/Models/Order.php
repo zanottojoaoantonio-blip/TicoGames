@@ -1,6 +1,7 @@
 <?php
 
 // Organiza esta classe no grupo de Models da aplicação.
+
 namespace App\Models;
 
 // Importa a base do Eloquent e os tipos das relações com usuário e itens.
@@ -22,7 +23,8 @@ class Order extends Model
      */
     protected $fillable = [
         'user_id', // Usuário que realizou a compra.
-        'status', // pending_payment, paid ou cancelled.
+        'status', // pending_payment, paid, shipped, delivered, cancelled.
+        'paid_at',
         'total', // Soma dos preços unitários históricos multiplicados pelas quantidades.
         'shipping_recipient_name', // Cópia do nome do destinatário.
         'shipping_postal_code', // Cópia do CEP, preservando zeros iniciais.
@@ -42,7 +44,7 @@ class Order extends Model
      */
     protected function casts(): array
     {
-        return ['total' => 'decimal:2'];
+        return ['total' => 'decimal:2', 'paid_at' => 'datetime'];
     }
 
     // Cada pedido pertence ao usuário que fez a compra.

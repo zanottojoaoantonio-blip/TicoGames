@@ -1,68 +1,52 @@
 # Contas, endereços, carrinho e pedidos
 
-Implementados em 02/11/2026 a pedido do usuário, junto com a preparação e implantação da autenticação da etapa 8. Mantido o padrão de Controller, Service, FormRequest e Resource. Não foram criadas telas.
+Controllers recebem requisições validadas, Services aplicam regras e Resources selecionam a saída JSON. As rotas privadas usam sessão Sanctum.
 
-## Contas
+## Conta e endereços
 
-`UserController` e `UserService` implementam listagem, consulta, criação, atualização e exclusão administrativa. As rotas `/api/users` exigem `auth:sanctum` e `admin`; clientes não podem consultar outras contas. Senhas e remember_token não aparecem no Resource. As operações de cadastro criam clientes; nenhum campo de entrada promove a conta a admin.
+`GET /api/me` consulta a conta; `PATCH /api/user` altera nome/email/senha; `DELETE /api/user` exclui a conta e encerra a sessão. Contas com pedidos não podem ser excluídas: 422 preserva o histórico. O CRUD `/api/users` exige admin; os cadastros criam clientes.
 
-O próprio usuário consulta sua conta em `GET /api/me`, altera os dados em `PATCH /api/user` e pode excluir em `DELETE /api/user`. Se houver pedidos, a exclusão é rejeitada com 422 para preservar o histórico. Excluir a própria conta encerra a sessão. A criação pública e a autenticação seguem [authentication.md](authentication.md).
+`/api/addresses` oferece listagem, consulta, criação, atualização e exclusão dos próprios endereços. O dono vem da sessão; um `user_id` no corpo não transfere propriedade. IDs alheios retornam 404.
 
-## Endereços
-
-`AddressController` e `AddressService` fornecem as cinco ações REST em `/api/addresses`. Todas exigem autenticação. O Service faz as buscas pelo relacionamento da conta conectada; IDs de outra conta retornam 404.
-
-O dono vem da sessão, não de user_id enviado no JSON. Campos: recipient_name, postal_code (até 9 caracteres), street, number (até 20), complement opcional, neighborhood, city e state com dois caracteres. Atualizações são parciais. Criar retorna 201; consultar/alterar, 200; excluir, 204.
+Campos: `recipient_name`, `postal_code`, `street`, `number`, `complement` opcional, `neighborhood`, `city`, `state`. Criação retorna 201, consulta/edição 200 e exclusão 204.
 
 ## Carrinho
 
-`CartController` e `CartService` trabalham com o único carrinho da conta conectada. Os itens continuam salvos ao sair da conta. Há transação e bloqueio da linha do usuário para serializar alterações e a criação do carrinho.
-
-| Método e rota | Função |
+| Método e rota | Ação |
 | --- | --- |
-| GET `/api/cart` | Consulta ou prepara o carrinho da conta, com itens e produtos. |
-| POST `/api/cart/items` | Recebe product_id e quantity; acrescenta à quantidade existente. |
-| PATCH `/api/cart/items/{id}` | Define a quantidade absoluta do item. |
-| DELETE `/api/cart/items/{id}` | Remove o item próprio. |
-| DELETE `/api/cart` | Remove todos os itens do próprio carrinho. |
-| POST `/api/cart/merge` | Recebe items, cada um com product_id e quantity, e soma ao carrinho autenticado. |
+| GET `/api/cart` | Consulta/prepara carrinho da sessão visitante ou conta |
+| POST `/api/cart/items` | Soma `quantity` ao `product_id` |
+| PATCH `/api/cart/items/{id}` | Define quantidade absoluta; zero remove |
+| DELETE `/api/cart/items/{id}` | Remove item próprio |
+| DELETE `/api/cart` | Limpa os itens |
+| POST `/api/cart/merge` | Compatibilidade: consome visitante identificado pela sessão, sem corpo de itens |
 
-Consulta, inclusão, alteração e incorporação retornam 200 com o carrinho em data; exclusões retornam 204. Quantidades precisam ser positivas e não exceder o estoque disponível nas inclusões/alterações. Produto inativo é rejeitado. Falha em qualquer item da incorporação desfaz toda a operação.
+O visitante usa token gerado pela API e guardado na sessão; o banco guarda seu hash. O carrinho autenticado persiste após logout. A fusão ocorre automaticamente em `AuthService::login/register`, soma por produto, limita ao estoque, remove indisponíveis e consome o visitante. A primeira leitura após autenticar inclui `warnings`; leituras posteriores não repetem os avisos.
 
-A etapa 9 enviará os itens do localStorage após o login e retirará os itens locais somente após o sucesso. O endpoint soma quantidades; reenviar a mesma operação soma novamente. A interface deve tratar esse fluxo para não repetir automaticamente a incorporação. O frontend e o localStorage não foram implementados nesta entrega.
+Há transações e bloqueios no carrinho/usuário/produtos. Repetir a fusão não duplica itens. Falhas preservam os carrinhos; limite de 100 produtos distintos ou indisponibilidade nas inclusões/edições retorna 409. Subtotais, frete zero e total vêm do servidor.
 
-## Pedidos e pagamento simulado
+## Pedidos
 
-`OrderController` e `OrderService` oferecem ações do fluxo de compra. Itens de pedido não têm CRUD livre: são criados pelo backend, a partir do carrinho.
-
-| Método e rota | Função |
+| Método e rota | Ação |
 | --- | --- |
-| GET `/api/orders` | Lista somente os pedidos da própria conta. |
-| GET `/api/orders/{id}` | Consulta o pedido próprio com seus itens. |
-| POST `/api/orders` | Recebe address_id, usa o carrinho da conta e cria pedido pendente. |
-| POST `/api/orders/{id}/pay` | Confirma pagamento simulado e baixa o estoque. |
-| POST `/api/orders/{id}/cancel` | Cancela um pedido pendente sem alterar estoque. |
+| GET `/api/orders?status=paid` | Pedidos próprios; admin vê todos, com filtro opcional |
+| GET `/api/orders/{id}` | Pedido próprio ou qualquer pedido como admin |
+| POST `/api/orders` | Recebe `address_id`, cria pendente, baixa estoque e limpa carrinho |
+| POST `/api/orders/{id}/pay` | Pagamento simulado de pedido pendente |
+| POST `/api/orders/{id}/cancel` | Cancela somente pendente e repõe unidades |
+| PATCH `/api/orders/{id}/status` | Admin aplica transições permitidas |
 
-Na criação, o Service valida o endereço próprio, carrinho não vazio, produtos ativos e quantidades disponíveis. Calcula o total com BCMath, sem float, e verifica o limite decimal(10,2). Ignora preço, total, status e dono enviados pelo cliente, pois esses campos não passam pelo FormRequest. Copia o endereço, os nomes e os preços; salva o pedido e os itens e limpa o carrinho dentro de uma transação. Responde 201 com status pending_payment. Não reserva nem baixa estoque nessa ação.
+Criação exige endereço próprio, carrinho não vazio, produtos ativos e estoque. **Vazio retorna 422** com `message`; estoque/atividade em conflito retorna 409. Cálculos usam BCMath e respeitam decimal(10,2). Corpo do cliente não determina preço, total, dono ou status.
 
-Na confirmação, bloqueia a linha do pedido com lockForUpdate(), verifica se está pendente e bloqueia os produtos em ordem de ID. Confere novamente ativo e estoque de todos os itens; somente então diminui as quantidades e altera o status para paid. Toda a operação é uma transação. O cancelamento disputa o mesmo bloqueio do pedido e só aceita pending_payment. Nova decisão sobre pedido pago ou cancelado retorna 422. Consultar ou decidir pedido de outra pessoa retorna 404.
+A criação copia endereço, nomes e preços, baixa todas as unidades e limpa o carrinho atomicamente. Pagamento apenas marca `paid` e `paid_at`, sem nova baixa. Alterações posteriores nos cadastros não mudam o histórico.
 
-Não há pagamento real, campo payment_method, expiração automática nem cancelamento de pedido pago. Alterações posteriores no catálogo ou no endereço salvo não mudam as cópias históricas do pedido.
+| Origem | Destinos |
+| --- | --- |
+| `pending_payment` | `paid`, `cancelled` |
+| `paid` | `shipped`, somente admin |
+| `shipped` | `delivered`, somente admin |
+| `delivered`, `cancelled` | Nenhum |
 
-## Testes e limites da verificação
+Dono/admin podem pagar ou cancelar pendentes. Admin também respeita a proibição de cancelar pagos. Cancelamento inválido retorna 409 sem reposição; o válido repõe uma vez. Decidir pedido alheio como cliente retorna 403; consultar pedido alheio retorna 404.
 
-A suíte atual tem 44 testes e 664 asserções, todos aprovados em SQLite em memória. Os casos novos cobrem autenticação, perfis, proprietário de endereço/carrinho/pedido, incorporação de itens, persistência ao sair, cópias históricas, estoque conferido novamente, repetição de decisões, rollback e limite do total. HTTP real confirmou sessão, CSRF e CORS.
-
-Os bloqueios para concorrência estão implementados para o MySQL. A suíte SQLite verifica os resultados e transações sequenciais; ela não comprova a disputa simultânea de bloqueios do MySQL. Não foi executado teste de concorrência real nesta entrega.
-
-## Checklist manual para o estudante
-
-- [ ] Entrar como cliente e criar, alterar e excluir um endereço de teste.
-- [ ] Acrescentar um produto ao carrinho, alterar sua quantidade e conferir o resultado.
-- [ ] Sair e entrar novamente; conferir que os itens continuam no carrinho.
-- [ ] Criar pedido com address_id próprio; conferir itens, total e cópia do endereço.
-- [ ] Confirmar pagamento e conferir que a baixa ocorre uma única vez.
-- [ ] Em outro pedido pendente, cancelar e conferir que o estoque não muda.
-- [ ] Entrar com outra conta e conferir que ela não vê nem altera esses dados.
-
-Os dados desse checklist manual são reais no banco local. Os testes automatizados já executados usaram apenas SQLite em memória.
+Frete gratuito. Sem gateway real, reembolso ou expiração automática. Testes e limites: [verificação](frontend-verification.md).

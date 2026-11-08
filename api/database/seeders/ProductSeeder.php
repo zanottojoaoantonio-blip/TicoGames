@@ -21,7 +21,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Jogo físico de ação e RPG para PlayStation 5.',
                 'price' => '299.90',
                 'stock' => 8,
-                'categories' => ['Jogos', 'Destaques'],
+                'categories' => ['Jogos'],
                 'genres' => ['Ação', 'RPG'],
             ],
             [
@@ -39,7 +39,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Jogo físico de corrida para Nintendo Switch.',
                 'price' => '329.90',
                 'stock' => 10,
-                'categories' => ['Jogos', 'Destaques'],
+                'categories' => ['Jogos'],
                 'genres' => ['Corrida'],
             ],
             [
@@ -57,7 +57,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Console PlayStation 5 com leitor de discos.',
                 'price' => '3499.90',
                 'stock' => 3,
-                'categories' => ['Consoles', 'Destaques'],
+                'categories' => ['Consoles'],
                 'genres' => [], // Consoles não precisam de gênero.
             ],
             [
@@ -75,10 +75,25 @@ class ProductSeeder extends Seeder
                 'description' => 'Console Nintendo Switch compatível com jogos físicos.',
                 'price' => '2199.90',
                 'stock' => 4,
-                'categories' => ['Consoles', 'Destaques'],
+                'categories' => ['Consoles'],
                 'genres' => [],
             ],
         ];
+
+        $titles = ['Hogwarts Legacy', 'Resident Evil 4', 'Sonic Frontiers', 'Minecraft', 'Stardew Valley', 'Hades', 'Dead Cells'];
+        foreach ($titles as $index => $name) {
+            foreach (['PlayStation 5', 'Xbox Series', 'Nintendo Switch'] as $platform) {
+                $products[] = ['name' => $name, 'platform' => $platform,
+                    'description' => $name.' para '.$platform.'. Produto fictício para demonstração.',
+                    'price' => '199.90', 'stock' => $index === 0 ? 0 : 10,
+                    'is_active' => $index !== 1, 'categories' => ['Jogos'], 'genres' => ['Ação']];
+            }
+        }
+        foreach (['Controle sem fio', 'Headset estéreo'] as $name) {
+            $products[] = ['name' => $name, 'platform' => 'PlayStation 5',
+                'description' => $name.' de demonstração.', 'price' => '149.90', 'stock' => 10,
+                'categories' => ['Acessórios'], 'genres' => []];
+        }
 
         foreach ($products as $data) {
             // Busca o ID da plataforma; falha se o seeder anterior não a criou.
@@ -89,19 +104,14 @@ class ProductSeeder extends Seeder
             $product = Product::firstOrCreate(
                 ['name' => $data['name'], 'platform_id' => $platform->id],
                 [
+                    'category_id' => Category::where('name', $data['categories'][0])->firstOrFail()->id,
                     'description' => $data['description'],
                     'price' => $data['price'],
                     'image_path' => 'images/product-placeholder.svg',
                     'stock' => $data['stock'],
-                    'is_active' => true,
+                    'is_active' => $data['is_active'] ?? true,
                 ],
             );
-
-            // Acrescenta as associações sem duplicar nem remover vínculos existentes.
-            foreach ($data['categories'] as $name) {
-                $category = Category::where('name', $name)->firstOrFail();
-                $product->categories()->syncWithoutDetaching([$category->id]);
-            }
 
             // A lista vazia dos consoles simplesmente não executa este laço.
             foreach ($data['genres'] as $name) {

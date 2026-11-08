@@ -29,8 +29,7 @@ class UpdateProductRequest extends FormRequest
             'stock' => ['sometimes', 'required', 'integer', 'min:0', 'max:4294967295'],
             'is_active' => ['sometimes', 'required', 'boolean'],
             // Uma lista enviada substitui os vínculos, mas categorias não podem ficar vazias.
-            'category_ids' => ['sometimes', 'required', 'array', 'min:1'],
-            'category_ids.*' => ['required', 'integer', 'distinct', 'exists:categories,id'],
+            'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
             // [] remove todos os gêneros; omitir a lista preserva os vínculos atuais.
             'genre_ids' => ['sometimes', 'array'],
             'genre_ids.*' => ['required', 'integer', 'distinct', 'exists:genres,id'],
