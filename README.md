@@ -4,37 +4,66 @@ Loja de demonstração com Laravel 12, MySQL 8.4 e frontend HTML, JavaScript e B
 
 A documentação de backend, frontend, banco e API está reunida em [DOCUMENTACAO.md](DOCUMENTACAO.md).
 
-## Iniciar
+## Configuração completa no Linux
 
-Requisitos: Docker Desktop com containers Linux e Docker Compose.
+### Pré-requisitos
 
-Na raiz, prepare a configuração sem sobrescrever um ambiente existente:
+- Seu repositório do GitHub já clonado e terminal Bash aberto na raiz do projeto, onde está `compose.yaml`.
+- Docker Engine em execução e Docker Compose 2.24 ou superior.
+- Permissão para executar Docker com seu usuário e portas locais `80` e `3306` livres.
+- Acesso à internet para baixar as imagens e as dependências na primeira execução.
 
-```powershell
-if (-not (Test-Path -LiteralPath .env)) {
-    Copy-Item -LiteralPath .env.example -Destination .env
-}
-docker compose build
-docker compose run --rm --no-deps api composer install --no-interaction --prefer-dist
+PHP, Composer e MySQL são executados nos containers; não é necessário instalá-los no Linux para iniciar a loja.
+
+O Compose usa o `.env.example` versionado. Não é necessário copiar arquivos nem preencher `APP_KEY` para uma instalação nova. Se já existir um `.env` na raiz, seus valores têm prioridade, preservando a chave e as credenciais do ambiente.
+
+Antes de iniciar uma base existente, faça backup: a API executará migrations e seeders automaticamente. Bases antigas que ainda não receberam a conversão de categorias, carrinhos de visitantes e reservas de pedidos precisam ser atualizadas pela versão anterior do projeto; `migrate` não reaplica arquivos já executados. Veja [Migrations, backups e manutenção](DOCUMENTACAO.md#migrations-backups-e-manutenção).
+
+### 1. Construir e iniciar os containers
+
+```bash
+docker compose up -d --build --wait
 ```
 
-Somente em uma instalação nova, gere a chave e salve o resultado em `APP_KEY` no `.env` da raiz:
+O comando constrói as imagens e inicia `mysql`, `api`, `frontend` e `proxy`. Após o MySQL ficar pronto, a API executa automaticamente, nesta ordem:
 
-```powershell
-docker compose run --rm --no-deps api php artisan key:generate --show
+1. `composer install` e a verificação dos requisitos PHP.
+2. Limpeza do cache de configuração.
+3. Geração da chave, somente se não houver `APP_KEY` configurada nem chave persistida.
+4. `php artisan migrate --force`.
+5. `php artisan db:seed --force`.
+6. Inicialização do servidor.
+
+Os seeders acrescentam dados sem reiniciar preço, estoque ou contas já cadastradas. Reiniciar a API reaplica somente migrations pendentes e repete a carga sem duplicar os dados de demonstração. Se uma etapa falhar, o servidor não inicia; consulte os logs e corrija a causa.
+
+Aguarde o término: `--wait` só retorna sucesso quando os serviços estão prontos. Não é necessário executar migrations ou seeders manualmente.
+
+Confira os containers:
+
+```bash
+docker compose ps
 ```
 
-Preserve uma chave já configurada. Depois, inicie a loja e prepare a base:
+Se algum serviço falhar, consulte os logs antes de continuar:
 
-```powershell
-docker compose up -d --wait
-docker compose exec -T api php artisan migrate --force
-docker compose exec -T api php artisan db:seed --force
+```bash
+docker compose logs --tail 100 mysql api frontend proxy
 ```
 
-Faça backup antes de atualizar uma base existente. Os seeders acrescentam dados sem reiniciar preço, estoque ou contas já cadastradas.
+### 2. Conferir a instalação
 
-As migrations de criação foram consolidadas com o esquema atual. Bases antigas que ainda não receberam a conversão de categorias, carrinhos de visitantes e reservas de pedidos precisam ser atualizadas pela versão anterior do projeto antes de usar esta versão; `migrate` não reaplica arquivos já executados. Veja [Migrations, backups e manutenção](DOCUMENTACAO.md#migrations-backups-e-manutenção).
+```bash
+docker compose ps
+docker compose exec -T api php artisan migrate:status
+```
+
+Confirme que os serviços estão saudáveis e as migrations aparecem como executadas. Acesse a loja em [http://localhost](http://localhost) e entre com uma das contas de demonstração abaixo.
+
+Para conferir a chave carregada e a carga de uma instalação nova:
+
+```bash
+docker compose exec -T api php -d zend.assertions=1 -d assert.exception=1 tests/compose-bootstrap.php
+```
 
 ## Acessos
 
@@ -70,23 +99,23 @@ A carga contém 30 produtos, três categorias, três plataformas, quatro gênero
 
 Após editar o frontend:
 
-```powershell
+```bash
 docker compose up -d --build --no-deps --wait frontend
 ```
 
-Após alterar configuração da API no `.env`:
+Após alterar configuração da API no `.env.example` ou no `.env` opcional:
 
-```powershell
+```bash
 docker compose exec -T api php artisan config:clear
 docker compose up -d --force-recreate --no-deps --wait api
 ```
 
 Para conferir a execução ou parar os serviços sem apagar dados:
 
-```powershell
+```bash
 docker compose ps
 docker compose logs --tail 50 api
 docker compose stop
 ```
 
-`docker compose down -v` apaga os volumes. Preserve backups do MySQL, de `api_storage` e de `api_uploads`. Detalhes em [DOCUMENTACAO.md](DOCUMENTACAO.md).
+`docker compose down -v` apaga os volumes, incluindo o banco e a chave gerada. Preserve backups do MySQL, de `api_storage` e de `api_uploads`. Detalhes em [DOCUMENTACAO.md](DOCUMENTACAO.md).

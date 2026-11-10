@@ -32,7 +32,9 @@ O Compose não possui perfil QA, serviços paralelos ou porta 8081. Todas as ope
 
 ## Configuração
 
-O arquivo `.env` da raiz é injetado na API pelo Compose. Não é necessário outro arquivo em api/. Preserve APP_KEY em um ambiente existente.
+O Compose injeta `.env.example` na API e aceita um `.env` opcional na raiz, cujos valores têm prioridade. Não é necessário copiar arquivos ou criar outro `.env` em api/. Na inicialização, a API instala as dependências, limpa o cache de configuração, gera uma chave se necessário, executa migrations e seeders e inicia o servidor somente após essas etapas terminarem com sucesso.
+
+Uma APP_KEY já configurada é preservada. Quando ela está vazia, a chave é gerada uma única vez em `/app/storage/app.key`, no volume api_storage, e carregada tanto pelo servidor quanto pelos comandos Artisan. Reiniciar ou recriar o container mantém essa chave; apagar api_storage a remove.
 
 | Variável | Uso local |
 | --- | --- |
@@ -231,7 +233,7 @@ O marcador demo-guest-cart, guardado como hash, impede recriar pedidos ao repeti
 
 ## Migrations, backups e manutenção
 
-Use migrate para aplicar somente arquivos pendentes e db:seed para acrescentar exemplos. Faça backup primeiro; não use migrate:fresh, refresh ou down -v em uma base que precise preservar.
+O Compose executa migrate para aplicar somente arquivos pendentes e db:seed para acrescentar exemplos em cada inicialização da API. Faça backup antes de iniciar uma base existente; não use migrate:fresh, refresh ou down -v em uma base que precise preservar.
 
 As migrations de criação já definem products.category_id obrigatório, carts.user_id opcional, carts.session_id único e opcional, os cinco estados de pedidos e orders.paid_at opcional. A antiga migration de evolução foi removida após consolidar essa estrutura nas migrations originais.
 

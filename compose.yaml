@@ -21,7 +21,23 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile.dev
-    env_file: ./.env
+    env_file:
+      - ./.env.example
+      - path: ./.env
+        required: false
+    command:
+      - sh
+      - -ec
+      - |
+        composer install --no-interaction --prefer-dist
+        composer check-platform-reqs
+        php artisan config:clear
+        if [ -z "$${APP_KEY:-}" ] && [ ! -s storage/app.key ]; then
+          (umask 077; php artisan key:generate --show --no-ansi > storage/app.key)
+        fi
+        php artisan migrate --force
+        php artisan db:seed --force
+        exec frankenphp run --config /etc/frankenphp/Caddyfile --adapter caddyfile
     depends_on:
       mysql:
         condition: service_healthy
