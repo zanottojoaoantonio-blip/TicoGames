@@ -17,7 +17,6 @@ class UserController extends Controller
         private AuthService $authService
     ) {}
 
-    // As ações de listagem e gerenciamento por ID ficam restritas ao administrador.
     public function index()
     {
         $users = $this->userService->listAll();
@@ -48,7 +47,6 @@ class UserController extends Controller
 
     public function destroy(Request $request, int $id)
     {
-        // Ao excluir a própria conta, encerra também a sessão atual.
         if ($request->user()->id === $id) {
             return $this->deleteMe($request);
         }

@@ -24,7 +24,6 @@ function showLoginSuccess(user) {
 }
 
 function showLoginError(error) {
-    // O erro completo do Axios pode conter a senha: não registrá-lo no console.
     loginStatus.className = 'small text-danger mb-3';
     const status = error.response?.status;
 

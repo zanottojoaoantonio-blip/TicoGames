@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 
 class EnsureAdmin
 {
-    // A autenticação acontece antes; aqui verificamos o perfil da conta.
     public function handle(Request $request, Closure $next)
     {
         abort_unless($request->user()?->role === 'admin', 403);

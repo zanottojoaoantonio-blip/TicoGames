@@ -13,13 +13,11 @@ class StoreScenarioSeeder extends Seeder
 {
     public function run(): void
     {
-        // Um marcador separado impede recriar pedidos ou alterar carrinhos ao repetir a carga.
         if (Cart::where('session_id', hash('sha256', 'demo-guest-cart'))->exists()) {
             return;
         }
         $cartService = app(CartService::class);
         $product = Product::where('name', 'Hades')->where('is_active', true)->where('stock', '>=', 5)->firstOrFail();
-        // Usa uma conta de demonstração com carrinho vazio para preservar compras em andamento.
         $user = User::whereIn('email', ['customer@ticogames.test', 'ana@ticogames.test', 'bruno@ticogames.test'])
             ->whereDoesntHave('cart.items')->firstOrFail();
         $address = $user->addresses()->firstOrCreate(['street' => 'Rua de Exemplo', 'number' => '12A'], [

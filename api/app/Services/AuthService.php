@@ -14,7 +14,6 @@ class AuthService
 
     public function register(array $data, Request $request): User
     {
-        // role não está em fillable: o banco aplica o padrão customer.
         $user = DB::transaction(function () use ($data, $request) {
             $user = User::create($data)->refresh();
             $this->mergeGuestCart($user, $request);
@@ -37,7 +36,6 @@ class AuthService
             ]);
         }
 
-        // Troca o identificador da sessão depois de autenticar.
         $request->session()->regenerate(true);
         $request->session()->forget('guest_cart_token');
         $user = Auth::guard('web')->user();

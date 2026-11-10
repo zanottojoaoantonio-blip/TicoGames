@@ -17,5 +17,4 @@ COPY Caddyfile /etc/frankenphp/Caddyfile
 
 EXPOSE 8000
 
-# O Compose monta o código e mantém dependências e storage em volumes.
 CMD ["sh", "-c", "composer install --no-interaction --prefer-dist && composer check-platform-reqs && exec frankenphp run --config /etc/frankenphp/Caddyfile --adapter caddyfile"]

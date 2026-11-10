@@ -3,7 +3,6 @@ axios.defaults.baseURL = window.TICOGAMES_CONFIG?.apiBaseUrl || '';
 axios.defaults.withCredentials = true;
 axios.defaults.withXSRFToken = true;
 
-// A autenticação permanece nos cookies do Laravel.
 const Store = {
     user: null,
     cart: [],
@@ -78,7 +77,6 @@ const Store = {
             return response.data.data;
         }
 
-        // Escritas não são repetidas automaticamente: podem já ter sido aplicadas.
         await axios.get('/sanctum/csrf-cookie', { headers, timeout: 15000 });
 
         const response = await axios.request({ method, url, data, headers, timeout: 15000 });
@@ -159,7 +157,6 @@ const Store = {
             },
         );
 
-        // A tela apresenta a falha, sem rejeição não tratada.
         Store.ready.catch(() => {});
         return Store.ready;
     },
@@ -168,7 +165,6 @@ const Store = {
         try {
             await Store.ready;
         } catch {
-            // Repetir somente a leitura, antes de uma nova ação explícita.
             await Store.initialize();
         }
     },

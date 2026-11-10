@@ -12,8 +12,6 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        // Dados de demonstração: preços e estoques são fictícios, sem consulta a lojas.
-        // Preços são textos decimais para não usar números de ponto flutuante.
         $products = [
             [
                 'name' => 'Elden Ring',
@@ -58,7 +56,7 @@ class ProductSeeder extends Seeder
                 'price' => '3499.90',
                 'stock' => 3,
                 'categories' => ['Consoles'],
-                'genres' => [], // Consoles não precisam de gênero.
+                'genres' => [],
             ],
             [
                 'name' => 'Xbox Series X',
@@ -96,11 +94,8 @@ class ProductSeeder extends Seeder
         }
 
         foreach ($products as $data) {
-            // Busca o ID da plataforma; falha se o seeder anterior não a criou.
             $platform = Platform::where('name', $data['platform'])->firstOrFail();
 
-            // Nome e plataforma identificam cada exemplo, sem fixar IDs no código.
-            // Os valores do segundo argumento só são usados na criação.
             $product = Product::firstOrCreate(
                 ['name' => $data['name'], 'platform_id' => $platform->id],
                 [
@@ -113,7 +108,6 @@ class ProductSeeder extends Seeder
                 ],
             );
 
-            // A lista vazia dos consoles simplesmente não executa este laço.
             foreach ($data['genres'] as $name) {
                 $genre = Genre::where('name', $name)->firstOrFail();
                 $product->genres()->syncWithoutDetaching([$genre->id]);

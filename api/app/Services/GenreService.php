@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
-// Concentra as operações de gêneros, sem montar respostas HTTP.
 use App\Models\Genre;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
 class GenreService
 {
-    // withCount() inclui products_count sem carregar os produtos inteiros.
     public function listAll(): Collection
     {
         $genres = Genre::withCount('products')->orderBy('name')->get();
@@ -17,7 +15,6 @@ class GenreService
         return $genres;
     }
 
-    // Busca pelo ID e inclui a contagem; findOrFail() gera 404 se não encontrar.
     public function findById(int $id): Genre
     {
         $genre = Genre::withCount('products')->findOrFail($id);
@@ -25,7 +22,6 @@ class GenreService
         return $genre;
     }
 
-    // Cria o cadastro usando os campos validados pelo FormRequest.
     public function create(array $data): Genre
     {
         $genre = Genre::create($data);
@@ -35,7 +31,6 @@ class GenreService
         return $genre;
     }
 
-    // Localiza o registro, atualiza os campos recebidos e devolve sua contagem.
     public function update(int $id, array $data): Genre
     {
         $genre = Genre::findOrFail($id);
@@ -46,7 +41,6 @@ class GenreService
         return $genre;
     }
 
-    // Preserva os produtos: os vínculos devem ser ajustados antes da exclusão.
     public function delete(int $id): void
     {
         $genre = Genre::findOrFail($id);
@@ -57,7 +51,6 @@ class GenreService
             ]);
         }
 
-        // Sem vínculos, o cadastro pode ser removido fisicamente.
         $genre->delete();
     }
 }

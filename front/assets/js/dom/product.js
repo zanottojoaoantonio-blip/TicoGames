@@ -46,7 +46,6 @@ async function initializeProduct() {
     const id = new URLSearchParams(window.location.search).get('id');
 
     try {
-        // A URL é editável: conferir o ID antes de consultar a API.
         if (!Validacoes.urlId(id)) {
             productStatus.textContent = 'Selecione um produto válido no catálogo.';
             return;

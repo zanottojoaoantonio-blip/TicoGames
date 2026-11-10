@@ -99,7 +99,7 @@ class CartService
                         $existing->delete();
                     }
                 }
-                $guest->delete(); // Consome a sessão visitante na mesma transação da soma.
+                $guest->delete();
             }
             $cart = $this->totals($cart);
             $cart->setAttribute('warnings', $warnings);

@@ -227,7 +227,6 @@ async function createCheckoutOrder() {
             window.location.assign(`pedidos.html?id=${order.id}`);
         });
     } catch (error) {
-        // Resposta perdida pode significar pedido criado; consultar antes de repetir.
         orderUncertain = !error.response || error.response.status >= 500;
         checkoutStatus.textContent = Store.error(error);
 

@@ -15,13 +15,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('docs', fn () => response()->view('api-docs'));
 Route::get('openapi.yaml', fn () => response()->file(base_path('openapi.yaml'), ['Content-Type' => 'application/yaml']));
 
-// A origem stateful ativa sessão e CSRF antes destas ações, como no tutorial.
 Route::middleware([RequireFrontendSession::class, 'throttle:6,1'])->group(function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
 });
 
-// O visitante consulta; somente o administrador modifica o catálogo.
 foreach (['products' => ProductController::class, 'categories' => CategoryController::class,
     'platforms' => PlatformController::class, 'genres' => GenreController::class] as $resource => $controller) {
     Route::apiResource($resource, $controller)->only(['index', 'show'])

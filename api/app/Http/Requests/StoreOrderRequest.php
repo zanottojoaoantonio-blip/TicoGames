@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreOrderRequest extends FormRequest
 {
-    // A rota verifica autenticação e perfil; o Request valida os campos.
     public function authorize(): bool
     {
         return true;

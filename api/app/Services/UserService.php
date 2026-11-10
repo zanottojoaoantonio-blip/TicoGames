@@ -24,7 +24,6 @@ class UserService
 
     public function create(array $data): User
     {
-        // Nem o cadastro público nem este CRUD aceitam promover o perfil.
         $user = new User($data);
         $user->role = 'customer';
         $user->save();

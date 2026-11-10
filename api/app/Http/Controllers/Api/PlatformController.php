@@ -8,15 +8,12 @@ use App\Http\Requests\UpdatePlatformRequest;
 use App\Http\Resources\PlatformResource;
 use App\Services\PlatformService;
 
-// Recebe as requisições de plataformas e delega as operações ao Service.
 class PlatformController extends Controller
 {
-    // O Laravel injeta o Service e o guarda nesta propriedade.
     public function __construct(
         private PlatformService $platformService
     ) {}
 
-    // GET /api/platforms: busca os cadastros e devolve a lista em JSON.
     public function index()
     {
         $platforms = $this->platformService->listAll();
@@ -24,16 +21,13 @@ class PlatformController extends Controller
         return PlatformResource::collection($platforms);
     }
 
-    // POST /api/platforms: o FormRequest valida antes de executar esta ação.
     public function store(StorePlatformRequest $request)
     {
         $platform = $this->platformService->create($request->validated());
 
-        // O Resource define os campos; 201 informa que um cadastro foi criado.
         return (new PlatformResource($platform))->response()->setStatusCode(201);
     }
 
-    // GET /api/platforms/{id}: o Service busca o registro ou gera o erro 404.
     public function show(int $id)
     {
         $platform = $this->platformService->findById($id);
@@ -41,7 +35,6 @@ class PlatformController extends Controller
         return new PlatformResource($platform);
     }
 
-    // PUT ou PATCH /api/platforms/{id}: envia somente os campos validados ao Service.
     public function update(UpdatePlatformRequest $request, int $id)
     {
         $platform = $this->platformService->update($id, $request->validated());
@@ -49,7 +42,6 @@ class PlatformController extends Controller
         return new PlatformResource($platform);
     }
 
-    // DELETE /api/platforms/{id}: exclui se não houver produtos associados e responde sem corpo.
     public function destroy(int $id)
     {
         $this->platformService->delete($id);

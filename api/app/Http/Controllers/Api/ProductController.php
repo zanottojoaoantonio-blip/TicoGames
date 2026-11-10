@@ -10,15 +10,12 @@ use App\Http\Resources\ProductResource;
 use App\Services\ProductService;
 use Illuminate\Http\Request;
 
-// Recebe as requisições de produtos e delega as operações ao Service.
 class ProductController extends Controller
 {
-    // O Laravel injeta o Service e o guarda nesta propriedade.
     public function __construct(
         private ProductService $productService
     ) {}
 
-    // GET /api/products: busca os cadastros e devolve a lista em JSON.
     public function index(Request $request)
     {
         $filters = $request->validate([
@@ -42,16 +39,13 @@ class ProductController extends Controller
         return response()->json(['data' => ['image_path' => $path]], 201);
     }
 
-    // POST /api/products: o FormRequest valida antes de executar esta ação.
     public function store(StoreProductRequest $request)
     {
         $product = $this->productService->create($request->validated());
 
-        // O Resource define os campos; 201 informa que um cadastro foi criado.
         return (new ProductResource($product))->response()->setStatusCode(201);
     }
 
-    // GET /api/products/{id}: o Service busca o registro ou gera o erro 404.
     public function show(Request $request, int $id)
     {
         $product = $this->productService->findById($id, $request->user()?->role === 'admin');
@@ -59,7 +53,6 @@ class ProductController extends Controller
         return new ProductResource($product);
     }
 
-    // PUT ou PATCH /api/products/{id}: envia somente os campos validados ao Service.
     public function update(UpdateProductRequest $request, int $id)
     {
         $product = $this->productService->update($id, $request->validated());
@@ -67,7 +60,6 @@ class ProductController extends Controller
         return new ProductResource($product);
     }
 
-    // DELETE /api/products/{id}: desativa o produto e responde sem corpo.
     public function destroy(int $id)
     {
         $this->productService->delete($id);

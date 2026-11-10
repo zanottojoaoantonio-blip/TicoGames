@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
-// Concentra as operações de plataformas, sem montar respostas HTTP.
 use App\Models\Platform;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
 class PlatformService
 {
-    // withCount() inclui products_count sem carregar os produtos inteiros.
     public function listAll(): Collection
     {
         $platforms = Platform::withCount('products')->orderBy('name')->get();
@@ -17,7 +15,6 @@ class PlatformService
         return $platforms;
     }
 
-    // Busca pelo ID e inclui a contagem; findOrFail() gera 404 se não encontrar.
     public function findById(int $id): Platform
     {
         $platform = Platform::withCount('products')->findOrFail($id);
@@ -25,7 +22,6 @@ class PlatformService
         return $platform;
     }
 
-    // Cria o cadastro usando os campos validados pelo FormRequest.
     public function create(array $data): Platform
     {
         $platform = Platform::create($data);
@@ -35,7 +31,6 @@ class PlatformService
         return $platform;
     }
 
-    // Localiza o registro, atualiza os campos recebidos e devolve sua contagem.
     public function update(int $id, array $data): Platform
     {
         $platform = Platform::findOrFail($id);
@@ -46,7 +41,6 @@ class PlatformService
         return $platform;
     }
 
-    // Preserva os produtos: os vínculos devem ser ajustados antes da exclusão.
     public function delete(int $id): void
     {
         $platform = Platform::findOrFail($id);
@@ -57,7 +51,6 @@ class PlatformService
             ]);
         }
 
-        // Sem vínculos, o cadastro pode ser removido fisicamente.
         $platform->delete();
     }
 }

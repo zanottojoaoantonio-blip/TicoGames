@@ -66,7 +66,6 @@ async function loadCatalogProducts() {
     try {
         const { data, meta } = await ProdutoAPI.list(params);
 
-        // Uma busca antiga não pode substituir o resultado da busca atual.
         if (sequence !== catalogSequence) {
             return;
         }

@@ -45,7 +45,6 @@ class OrderService
                 abort(422, 'O carrinho está vazio.');
             }
 
-            // Ordem fixa de bloqueios reduz conflitos entre operações simultâneas.
             $products = Product::whereIn('id', $cart->items->pluck('product_id'))
                 ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             $total = '0.00';
@@ -55,7 +54,6 @@ class OrderService
                 $product = $products->get($item->product_id);
                 abort_unless($product, 404);
                 $this->cartService->checkAvailability($product, $item->quantity);
-                // BCMath calcula dinheiro como texto decimal, sem float.
                 $total = bcadd($total, bcmul($product->price, (string) $item->quantity, 2), 2);
                 $items[] = ['product_id' => $product->id, 'product_name' => $product->name,
                     'unit_price' => $product->price, 'quantity' => $item->quantity];

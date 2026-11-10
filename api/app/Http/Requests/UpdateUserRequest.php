@@ -7,7 +7,6 @@ use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
-    // A rota verifica autenticação e perfil; o Request valida os campos.
     public function authorize(): bool
     {
         return true;

@@ -342,7 +342,6 @@ async function logout() {
 }
 
 async function initializeMain() {
-    // A sessão pode responder antes de o script registrar o evento.
     renderMain();
 
     const activePage = window.location.pathname.split('/').pop() || 'index.html';
@@ -387,7 +386,6 @@ for (const button of document.querySelectorAll('[data-logout]')) {
 }
 
 window.addEventListener('pageshow', event => {
-    // Conferir a sessão ao voltar pelo histórico, antes de reapresentar dados privados.
     if (event.persisted) {
         window.location.reload();
     }

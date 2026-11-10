@@ -17,7 +17,6 @@ class AddressService
 
     public function findById(User $user, int $id): Address
     {
-        // O filtro pelo dono impede consultar endereços de outra conta.
         $address = $user->addresses()->findOrFail($id);
 
         return $address;
