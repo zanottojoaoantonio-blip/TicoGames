@@ -45,7 +45,7 @@ services:
       - ./api:/app
       - api_vendor:/app/vendor
       - api_storage:/app/storage
-      - api_uploads:/app/storage/app/public
+      - ./api/storage/app/public:/app/storage/app/public
     expose:
       - "8000"
     healthcheck:
@@ -88,4 +88,3 @@ volumes:
   mysql_data:
   api_vendor:
   api_storage:
-  api_uploads:

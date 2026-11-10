@@ -24,7 +24,7 @@ A aplicação usa Laravel 12, Sanctum por sessão, BCMath e MySQL 8.4. O fronten
 | Serviço | Função e persistência |
 | --- | --- |
 | mysql | Banco no volume mysql_data; porta local 127.0.0.1:3306 |
-| api | Laravel/FrankenPHP; código montado em /app, dependências em api_vendor, storage em api_storage e uploads em api_uploads |
+| api | Laravel/FrankenPHP; código montado em /app, dependências em api_vendor, storage em api_storage e uploads na pasta local api/storage/app/public |
 | frontend | HTML/JS/CSS copiados para a imagem Nginx |
 | proxy | Entrada em http://localhost, encaminhando API, Sanctum, imagens e frontend |
 
@@ -143,7 +143,7 @@ Visitantes/clientes só consultam produtos ativos; admin também recebe inativos
 
 O servidor filtra/ordena antes de paginar. Categorias, plataformas e gêneros vêm de consultas próprias. Nome deve ser único em cada classificação; exclusão de classificação com produtos, inclusive inativos, retorna 422. O painel gerencia categorias/produtos; plataformas/gêneros podem ser administrados pela API.
 
-Upload: POST /api/product-images com multipart/form-data e image JPEG/PNG/WebP até 5 MB. O retorno image_path pode ser usado no produto. Arquivos recebem nomes aleatórios em api_uploads e são servidos em /storage/products/{arquivo} com nosniff. URLs externas também são aceitas. Arquivos antigos são mantidos para preservar referências.
+Upload: POST /api/product-images com multipart/form-data e image JPEG/PNG/WebP até 5 MB. O retorno image_path pode ser usado no produto. Arquivos recebem nomes aleatórios em api/storage/app/public/products, uma pasta local montada diretamente no container e são servidos em /storage/products/{arquivo} com nosniff. URLs externas também são aceitas. Arquivos antigos são mantidos para preservar referências.
 
 ## Conta e endereços
 
@@ -225,7 +225,7 @@ DatabaseSeeder executa em transação: UserSeeder, CategorySeeder, PlatformSeede
 
 A carga cria um admin, três clientes, três categorias (Jogos, Consoles, Acessórios), três plataformas, quatro gêneros e 30 produtos. Há três versões inativas de Resident Evil 4 e três versões sem estoque de Hogwarts Legacy. Em uma base nova, visitantes consultam 27 produtos ativos.
 
-Produtos são identificados por nome/plataforma; valores padrão só são aplicados na criação. Gêneros são acrescentados sem remover vínculos existentes. Contas preservam nome, senha e perfil. Endereços são identificados por dono/rua/número.
+ProductSeeder define explicitamente os 30 produtos, com descrições próprias e imagens em api/public/images. Resident Evil 4 usa a capa do remake no PlayStation 5 e Xbox Series e a versão clássica no Nintendo Switch. Produtos são identificados por nome/plataforma; preço, estoque e atividade existentes são preservados. Registros que ainda usam images/product-placeholder.svg recebem a descrição e a imagem correspondentes; imagens personalizadas são preservadas. Gêneros são acrescentados sem remover vínculos existentes. Contas preservam nome, senha e perfil. Endereços são identificados por dono/rua/número.
 
 Cenários usam uma conta fictícia com carrinho vazio, preservando compras em andamento. Se todas as três contas estiverem com itens, a carga falha e a transação é desfeita. Hades precisa estar ativo com pelo menos cinco unidades. Os Services criam pedidos nos cinco estados e carrinhos visitante/cliente populados.
 
@@ -241,9 +241,9 @@ Bases que já receberam a evolução mantêm seus dados e reservas; alterar os a
 
 category_product permanece como arquivo, sem uso pela aplicação. Pagamentos antigos sem data precisa mantêm paid_at nulo. Reverter a conversão antiga exige restaurar backup, pois desfazer reservas automaticamente pode interferir em compras posteriores.
 
-Backups locais anteriores à carga ficam em .local-backups/, ignorada pelo Git. O backup SQL anterior à demonstração é pre-demo-20261108.sql. Preserve também os volumes api_storage e api_uploads; reconstruir imagens mantém os volumes, mas down -v os apaga.
+Backups locais anteriores à carga ficam em .local-backups/, ignorada pelo Git. O backup SQL anterior à demonstração é pre-demo-20261108.sql. Preserve também o volume api_storage e a pasta local api/storage/app/public. Reconstruir imagens mantém ambos; down -v apaga os volumes, mas mantém a pasta de uploads. Ao apagar o banco, os vínculos entre produtos e imagens precisam ser restaurados ou definidos nos seeders.
 
-O storage ativo é /app/storage no volume api_storage. /app/storage/app/public continua montado separadamente em api_uploads, preservando as imagens públicas existentes. Os arquivos gerados não são mais gravados na pasta local api/storage, que mantém somente a estrutura inicial. A imagem de desenvolvimento inclui os diretórios necessários para inicializar um volume vazio.
+O storage ativo é /app/storage no volume api_storage. /app/storage/app/public é montado separadamente a partir da pasta local api/storage/app/public, preservando as imagens públicas mesmo quando os volumes Docker são removidos. Os demais arquivos gerados permanecem no volume api_storage. Os uploads são ignorados pelo Git e precisam ser copiados separadamente para outro computador. A imagem de desenvolvimento inclui os diretórios necessários para inicializar um volume vazio.
 
 Na migração de 08/11/2026, sessões, cache, logs e arquivos privados foram copiados com a API parada e conferidos por hash antes de reiniciar. A antiga storage/ da raiz, sem uso pela API, foi arquivada e removida. Os arquivos TAR anteriores à mudança ficam em .local-backups/.
 

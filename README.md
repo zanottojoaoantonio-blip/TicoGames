@@ -74,7 +74,7 @@ docker compose exec -T api php -d zend.assertions=1 -d assert.exception=1 tests/
 | Contrato OpenAPI | [http://localhost/api/openapi.yaml](http://localhost/api/openapi.yaml) |
 | Saúde da API | [http://localhost/up](http://localhost/up) |
 
-O Compose contém somente `mysql`, `api`, `frontend` e `proxy`. Banco, sessões, cache, logs, arquivos privados e uploads ficam em volumes persistentes do Docker. O volume `api_storage` guarda o storage da API; `api_uploads` continua exclusivo para imagens públicas. As verificações do JavaScript podem ser executadas com `node --test front/tests/javascript.test.cjs`, sem dependências adicionais. O projeto não inclui ambiente QA.
+O Compose contém somente `mysql`, `api`, `frontend` e `proxy`. Banco, sessões, cache, logs e arquivos privados ficam em volumes persistentes do Docker. O volume `api_storage` guarda o storage da API. Os uploads ficam na pasta local `api/storage/app/public`, montada diretamente em `/app/storage/app/public`; as imagens continuam no computador mesmo após apagar os volumes. Essa pasta é ignorada pelo Git, portanto os uploads não acompanham um novo clone. As verificações do JavaScript podem ser executadas com `node --test front/tests/javascript.test.cjs`, sem dependências adicionais. O projeto não inclui ambiente QA.
 
 ## Contas de demonstração
 
@@ -85,7 +85,7 @@ O Compose contém somente `mysql`, `api`, `frontend` e `proxy`. Banco, sessões,
 | Cliente | ana@ticogames.test | password |
 | Cliente | bruno@ticogames.test | password |
 
-A carga contém 30 produtos, três categorias, três plataformas, quatro gêneros, carrinhos populados e pedidos nos cinco estados. Há produtos inativos e sem estoque. Contas existentes preservam suas credenciais.
+A carga contém 30 produtos com descrições próprias e imagens em `api/public/images`, três categorias, três plataformas, quatro gêneros, carrinhos populados e pedidos nos cinco estados. O ProductSeeder também substitui a imagem padrão dos produtos antigos, preservando imagens personalizadas, preços e estoque existentes. Há produtos inativos e sem estoque. Contas existentes preservam suas credenciais.
 
 ## Regras principais
 
@@ -118,4 +118,4 @@ docker compose logs --tail 50 api
 docker compose stop
 ```
 
-`docker compose down -v` apaga os volumes, incluindo o banco e a chave gerada. Preserve backups do MySQL, de `api_storage` e de `api_uploads`. Detalhes em [DOCUMENTACAO.md](DOCUMENTACAO.md).
+`docker compose down -v` apaga os volumes, incluindo o banco e a chave gerada, mas mantém os arquivos em `api/storage/app/public`. Apagar o banco também remove os vínculos entre produtos e imagens; restaure esses dados de um backup ou configure os caminhos nos seeders. Preserve backups do MySQL, de `api_storage` e da pasta `api/storage/app/public`. Detalhes em [DOCUMENTACAO.md](DOCUMENTACAO.md).
