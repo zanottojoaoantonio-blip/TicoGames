@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
+use App\Http\Requests\UploadProductImageRequest;
 use App\Http\Resources\ProductResource;
 use App\Services\ProductService;
 use Illuminate\Http\Request;
@@ -34,9 +35,8 @@ class ProductController extends Controller
         return ProductResource::collection($products);
     }
 
-    public function upload(Request $request)
+    public function upload(UploadProductImageRequest $request)
     {
-        $request->validate(['image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120']]);
         $path = $this->productService->upload($request->file('image'));
 
         return response()->json(['data' => ['image_path' => $path]], 201);

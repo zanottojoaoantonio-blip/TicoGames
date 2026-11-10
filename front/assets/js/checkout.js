@@ -2,122 +2,306 @@ const checkoutStatus = document.getElementById('checkout-status');
 const addressForm = document.getElementById('address-form');
 const addressFields = document.getElementById('address-fields');
 const addressStatus = document.getElementById('address-status');
-const createOrder = document.getElementById('create-order');
-const addressNames = ['recipient_name', 'postal_code', 'street', 'number', 'neighborhood', 'city', 'state'];
+const createOrderButton = document.getElementById('create-order');
+const addressNames = [
+    'recipient_name', 'postal_code', 'street', 'number', 'neighborhood', 'city', 'state',
+];
+
 let addresses = [];
 let selectedAddress = null;
 let editingAddress = null;
 let orderUncertain = false;
 
-function checkoutSummary() {
-  const target = document.getElementById('checkout-summary');
-  target.replaceChildren(...Store.cart.map(item => {
-    const text = document.createElement('p'); text.className = 'small';
-    text.textContent = `${item.quantity} × ${item.product?.name ?? 'Produto indisponível'} · ${item.product ? Store.money(Store.cents(item.product.price)) : '—'} cada · subtotal ${Store.money(Store.cents(item.subtotal))}`;
-    return text;
-  }));
-  const shipping = document.createElement('p'); shipping.textContent = 'Frete: ' + Store.money(Store.cents(Store.shippingCost)) + ' (gratuito para todos os pedidos).'; target.append(shipping);
-  document.getElementById('checkout-total').textContent = Store.cartLoaded ? Store.money(Store.total()) : '—';
-  createOrder.disabled = orderUncertain || Store.busy || !Store.cartLoaded || !Store.cart.length || !selectedAddress
-    || Store.cart.some(item => !item.product?.is_active || item.quantity > item.product.stock);
-  addressFields.disabled = Store.busy;
+function renderCheckoutSummary() {
+    const target = document.getElementById('checkout-summary');
+    const items = Store.cart.map(item => {
+        const name = item.product?.name ?? 'Produto indisponível';
+        const price = item.product ? Store.money(Store.cents(item.product.price)) : '—';
+        const subtotal = Store.money(Store.cents(item.subtotal));
+        const text = document.createElement('p');
+        text.className = 'small';
+        text.textContent = `${item.quantity} × ${name} · ${price} cada · subtotal ${subtotal}`;
+        return text;
+    });
+
+    target.replaceChildren(...items);
+
+    const shipping = document.createElement('p');
+    const shippingCost = Store.money(Store.cents(Store.shippingCost));
+    shipping.textContent = `Frete: ${shippingCost} (gratuito para todos os pedidos).`;
+    target.append(shipping);
+
+    document.getElementById('checkout-total').textContent = Store.cartLoaded
+        ? Store.money(Store.total())
+        : '—';
+
+    const hasUnavailableProduct = Store.cart.some(item => {
+        return !item.product?.is_active || item.quantity > item.product.stock;
+    });
+
+    createOrderButton.disabled = orderUncertain
+        || Store.busy
+        || !Store.cartLoaded
+        || !Store.cart.length
+        || !selectedAddress
+        || hasUnavailableProduct;
+
+    addressFields.disabled = Store.busy;
 }
 
-function resetAddress() {
-  editingAddress = null; addressForm.reset(); Store.fieldErrors(addressForm, {});
-  addressStatus.textContent = ''; document.getElementById('address-title').textContent = 'Novo endereço';
+function resetAddressForm() {
+    editingAddress = null;
+    addressForm.reset();
+    Store.fieldErrors(addressForm, {});
+    addressStatus.textContent = '';
+    document.getElementById('address-title').textContent = 'Novo endereço';
 }
 
 async function loadAddresses() {
-  const data = await Store.request('get', '/api/addresses');
-  if (!Array.isArray(data) || data.some(address => !Store.id(address?.id) || addressNames.some(field => typeof address[field] !== 'string'))) throw new Error('Endereços inválidos.');
-  addresses = data;
-  if (!addresses.some(address => address.id === selectedAddress)) selectedAddress = null;
-  renderAddresses(); checkoutSummary();
+    const data = await Store.request('get', '/api/addresses');
+
+    if (!Array.isArray(data)) {
+        throw new Error('Endereços inválidos.');
+    }
+
+    for (const address of data) {
+        if (!Store.id(address?.id)) {
+            throw new Error('Endereços inválidos.');
+        }
+
+        for (const field of addressNames) {
+            if (typeof address[field] !== 'string') {
+                throw new Error('Endereços inválidos.');
+            }
+        }
+    }
+
+    addresses = data;
+
+    if (!addresses.some(address => address.id === selectedAddress)) {
+        selectedAddress = null;
+    }
+
+    renderAddresses();
+    renderCheckoutSummary();
+}
+
+function createAddressRow(address) {
+    const row = document.createElement('div');
+    row.className = 'border rounded p-3';
+
+    const label = document.createElement('label');
+    label.className = 'd-block mb-3';
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'selected-address';
+    radio.value = address.id;
+    radio.className = 'form-check-input me-2';
+    radio.checked = selectedAddress === address.id;
+    radio.disabled = Store.busy;
+    radio.addEventListener('change', () => {
+        selectedAddress = address.id;
+        renderCheckoutSummary();
+    });
+
+    const complement = address.complement ? `, ${address.complement}` : '';
+    const description = `${address.recipient_name} — ${address.street}, ${address.number}${complement}`
+        + ` · ${address.neighborhood} · ${address.city}/${address.state} · ${address.postal_code}`;
+
+    label.append(radio, document.createTextNode(description));
+
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.className = 'btn btn-sm btn-outline-primary me-2';
+    editButton.textContent = 'Editar';
+    editButton.disabled = Store.busy;
+    editButton.addEventListener('click', () => editAddress(address.id));
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'btn btn-sm btn-outline-danger';
+    removeButton.textContent = 'Excluir';
+    removeButton.disabled = Store.busy;
+    removeButton.addEventListener('click', () => removeAddress(address));
+
+    row.append(label, editButton, removeButton);
+    return row;
 }
 
 function renderAddresses() {
-  const target = document.getElementById('address-list');
-  target.replaceChildren(...addresses.map(address => {
-    const row = document.createElement('div'); row.className = 'border rounded p-3';
-    const label = document.createElement('label'); label.className = 'd-block mb-3';
-    const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'selected-address'; radio.value = address.id;
-    radio.className = 'form-check-input me-2'; radio.checked = selectedAddress === address.id; radio.disabled = Store.busy;
-    radio.addEventListener('change', () => { selectedAddress = address.id; checkoutSummary(); });
-    label.append(radio, document.createTextNode(`${address.recipient_name} — ${address.street}, ${address.number}${address.complement ? `, ${address.complement}` : ''} · ${address.neighborhood} · ${address.city}/${address.state} · ${address.postal_code}`));
-    const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'btn btn-sm btn-outline-primary me-2'; edit.textContent = 'Editar'; edit.disabled = Store.busy;
-    edit.addEventListener('click', async () => {
-      try {
-        await Store.run(async () => {
-          const current = await Store.request('get', `/api/addresses/${address.id}`);
-          if (current.id !== address.id) throw new Error('Endereço inesperado.');
-          resetAddress(); editingAddress = current.id;
-          for (const field of [...addressNames, 'complement']) document.getElementById(`address-${field}`).value = current[field] ?? '';
-          document.getElementById('address-title').textContent = `Editar endereço #${current.id}`;
-          addressForm.scrollIntoView({ block: 'center' });
-        });
-        document.getElementById('address-recipient_name').focus({ preventScroll: true });
-      } catch (error) { addressStatus.textContent = Store.error(error); }
-    });
-    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'btn btn-sm btn-outline-danger'; remove.textContent = 'Excluir'; remove.disabled = Store.busy;
-    remove.addEventListener('click', async () => {
-      if (!await Store.confirm('Excluir endereço?', `${address.street}, ${address.number} será removido dos seus endereços. Pedidos anteriores preservam sua cópia.`, 'Excluir')) return;
-      try {
-        await Store.run(async () => {
-          await Store.request('delete', `/api/addresses/${address.id}`);
-          if (editingAddress === address.id) resetAddress();
-          await loadAddresses();
-        });
-        addressStatus.textContent = 'Endereço excluído.';
-      } catch (error) { addressStatus.textContent = Store.error(error); }
-    });
-    row.append(label, edit, remove); return row;
-  }));
-  if (!addresses.length) { const text = document.createElement('p'); text.textContent = 'Cadastre um endereço para continuar.'; target.append(text); }
+    const target = document.getElementById('address-list');
+    target.replaceChildren(...addresses.map(createAddressRow));
+
+    if (!addresses.length) {
+        const text = document.createElement('p');
+        text.textContent = 'Cadastre um endereço para continuar.';
+        target.append(text);
+    }
 }
 
-addressForm.addEventListener('submit', async event => {
-  event.preventDefault();
-  if (Store.busy || addressFields.disabled || !addressForm.reportValidity()) return;
-  const payload = Object.fromEntries([...new FormData(addressForm)].map(([name, value]) => [name, value.trim()]));
-  payload.state = payload.state.toUpperCase();
-  Store.fieldErrors(addressForm, {}); addressStatus.textContent = 'Salvando endereço...';
-  let focus;
-  try {
-    await Store.run(async () => {
-      const address = await Store.request(editingAddress ? 'patch' : 'post', editingAddress ? `/api/addresses/${editingAddress}` : '/api/addresses', payload);
-      if (!Store.id(address?.id)) throw new Error('Endereço inválido.');
-      selectedAddress = address.id; resetAddress(); await loadAddresses();
-    });
-    addressStatus.textContent = 'Endereço salvo e selecionado.';
-  } catch (error) { addressStatus.textContent = Store.error(error); focus = Store.fieldErrors(addressForm, error); }
-  finally { addressFields.disabled = false; focus?.focus(); }
-});
-document.getElementById('address-cancel').addEventListener('click', () => { if (!Store.busy) resetAddress(); });
+async function editAddress(id) {
+    try {
+        await Store.run(async () => {
+            const address = await Store.request('get', `/api/addresses/${id}`);
 
-createOrder.addEventListener('click', async () => {
-  if (createOrder.disabled || Store.busy || !selectedAddress) return;
-  try {
-    await Store.run(async () => {
-      const order = Store.order(await Store.request('post', '/api/orders', { address_id: selectedAddress }));
-      if (order.status !== 'pending_payment') throw new Error('Estado inesperado do pedido criado.');
-      window.location.assign(`pedidos.html?id=${order.id}`);
-    });
-  } catch (error) {
-    // Resposta perdida pode significar pedido criado; consultar antes de repetir.
-    orderUncertain = !error.response || error.response.status >= 500;
-    checkoutStatus.textContent = Store.error(error) + (orderUncertain ? ' Confira Meus pedidos antes de continuar.' : '');
-    checkoutSummary();
-  }
+            if (address.id !== id) {
+                throw new Error('Endereço inesperado.');
+            }
+
+            resetAddressForm();
+            editingAddress = address.id;
+
+            for (const field of [...addressNames, 'complement']) {
+                document.getElementById(`address-${field}`).value = address[field] ?? '';
+            }
+
+            document.getElementById('address-title').textContent = `Editar endereço #${address.id}`;
+            addressForm.scrollIntoView({ block: 'center' });
+        });
+
+        document.getElementById('address-recipient_name').focus({ preventScroll: true });
+    } catch (error) {
+        addressStatus.textContent = Store.error(error);
+    }
+}
+
+async function removeAddress(address) {
+    const confirmed = await Store.confirm(
+        'Excluir endereço?',
+        `${address.street}, ${address.number} será removido dos seus endereços. Pedidos anteriores preservam sua cópia.`,
+        'Excluir',
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        await Store.run(async () => {
+            await Store.request('delete', `/api/addresses/${address.id}`);
+
+            if (editingAddress === address.id) {
+                resetAddressForm();
+            }
+
+            await loadAddresses();
+        });
+
+        addressStatus.textContent = 'Endereço excluído.';
+    } catch (error) {
+        addressStatus.textContent = Store.error(error);
+    }
+}
+
+async function saveAddress(event) {
+    event.preventDefault();
+
+    if (Store.busy || addressFields.disabled) {
+        return;
+    }
+
+    const payload = {};
+
+    for (const [name, value] of new FormData(addressForm)) {
+        payload[name] = value.trim();
+    }
+
+    payload.state = payload.state.toUpperCase();
+    Store.fieldErrors(addressForm, {});
+    addressStatus.textContent = 'Salvando endereço...';
+    let focusTarget;
+
+    try {
+        await Store.run(async () => {
+            const method = editingAddress ? 'patch' : 'post';
+            const url = editingAddress ? `/api/addresses/${editingAddress}` : '/api/addresses';
+            const address = await Store.request(method, url, payload);
+
+            if (!Store.id(address?.id)) {
+                throw new Error('Endereço inválido.');
+            }
+
+            selectedAddress = address.id;
+            resetAddressForm();
+            await loadAddresses();
+        });
+
+        addressStatus.textContent = 'Endereço salvo e selecionado.';
+    } catch (error) {
+        addressStatus.textContent = Store.error(error);
+        focusTarget = Store.fieldErrors(addressForm, error);
+    } finally {
+        addressFields.disabled = false;
+        focusTarget?.focus();
+    }
+}
+
+async function createCheckoutOrder() {
+    if (createOrderButton.disabled || Store.busy || !selectedAddress) {
+        return;
+    }
+
+    try {
+        await Store.run(async () => {
+            const response = await Store.request('post', '/api/orders', {
+                address_id: selectedAddress,
+            });
+            const order = Store.order(response);
+
+            if (order.status !== 'pending_payment') {
+                throw new Error('Estado inesperado do pedido criado.');
+            }
+
+            window.location.assign(`pedidos.html?id=${order.id}`);
+        });
+    } catch (error) {
+        // Resposta perdida pode significar pedido criado; consultar antes de repetir.
+        orderUncertain = !error.response || error.response.status >= 500;
+        checkoutStatus.textContent = Store.error(error);
+
+        if (orderUncertain) {
+            checkoutStatus.textContent += ' Confira Meus pedidos antes de continuar.';
+        }
+
+        renderCheckoutSummary();
+    }
+}
+
+async function initializeCheckout() {
+    try {
+        await Store.session;
+
+        if (!Store.user) {
+            window.location.replace('login.html?next=checkout.html');
+            return;
+        }
+
+        await Store.ready;
+        await loadAddresses();
+        document.getElementById('checkout-content').hidden = false;
+        checkoutStatus.textContent = Store.cart.length
+            ? 'Escolha um endereço e confira os produtos.'
+            : 'Seu carrinho está vazio. Volte ao catálogo.';
+        renderCheckoutSummary();
+    } catch (error) {
+        checkoutStatus.textContent = Store.error(error);
+    }
+}
+
+addressForm.addEventListener('submit', saveAddress);
+
+createOrderButton.addEventListener('click', createCheckoutOrder);
+
+document.getElementById('address-cancel').addEventListener('click', () => {
+    if (!Store.busy) {
+        resetAddressForm();
+    }
 });
-window.addEventListener('store:change', () => { checkoutSummary(); renderAddresses(); });
-(async () => {
-  try {
-    await Store.session;
-    if (!Store.user) { window.location.replace('login.html?next=checkout.html'); return; }
-    await Store.ready; await loadAddresses();
-    document.getElementById('checkout-content').hidden = false;
-    checkoutStatus.textContent = Store.cart.length ? 'Escolha um endereço e confira os produtos.' : 'Seu carrinho está vazio. Volte ao catálogo.';
-    checkoutSummary();
-  } catch (error) { checkoutStatus.textContent = Store.error(error); }
-})();
+
+window.addEventListener('store:change', () => {
+    renderCheckoutSummary();
+    renderAddresses();
+});
+
+initializeCheckout();
