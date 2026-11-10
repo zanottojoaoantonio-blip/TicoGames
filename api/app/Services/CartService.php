@@ -41,7 +41,6 @@ class CartService
             $item = $cart->items()->where('product_id', $product->id)->first();
             $quantity = ($item?->quantity ?? 0) + $data['quantity'];
             $this->checkAvailability($product, $quantity);
-            abort_if(! $item && $cart->items()->count() >= 100, 409, 'O carrinho aceita até 100 produtos diferentes.');
             $cart->items()->updateOrCreate(['product_id' => $product->id], ['quantity' => $quantity]);
 
             return $this->totals($cart);
