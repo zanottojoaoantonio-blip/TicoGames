@@ -26,13 +26,13 @@ async function submitRegistration(event) {
 
     try {
         await Store.ready.catch(() => {});
-        const response = await Store.request('post', '/api/register', {
+        const response = await UsuarioAPI.register({
             name: values.name.trim(),
             email: values.email.trim(),
             password: values.password,
             password_confirmation: values.password_confirmation,
         });
-        const user = Store.account(response);
+        const user = Validacoes.account(response);
 
         registerForm.reset();
         registerForm.hidden = true;

@@ -6,12 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // Cria os carrinhos persistentes das contas; visitantes são incluídos na migration de evolução.
+    // Cria os carrinhos persistentes de contas e visitantes.
     public function up(): void
     {
         Schema::create('carts', function (Blueprint $table) {
             $table->id(); // Identificador do carrinho.
-            $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete(); // Um carrinho por usuário.
+            $table->foreignId('user_id')->nullable()->unique()->constrained()->cascadeOnDelete(); // Um carrinho por usuário.
+            $table->string('session_id', 64)->nullable()->unique(); // Hash da sessão do visitante.
             $table->timestamps(); // Datas de criação e atualização.
         });
     }

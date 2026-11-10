@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-// Guarda o carrinho de uma conta; visitantes recebem sessão na migration de evolução.
+// Guarda o carrinho de uma conta ou de um visitante identificado pela sessão.
 class Cart extends Model
 {
     /**
-     * Permite preencher o identificador do usuário dono do carrinho.
+     * Permite preencher o identificador do usuário ou da sessão visitante.
      * Os produtos e suas quantidades ficam nos itens, na tabela cart_items.
      * A unicidade de user_id será definida na migration: um carrinho por usuário.
      *

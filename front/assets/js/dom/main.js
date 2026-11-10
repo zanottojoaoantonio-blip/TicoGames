@@ -77,7 +77,7 @@ function renderSession() {
     }
 
     for (const link of document.querySelectorAll('[data-orders-link]')) {
-        link.textContent = user?.role === 'admin' ? 'Pedidos' : 'Meus pedidos';
+        link.textContent = Validacoes.admin(user) ? 'Pedidos' : 'Meus pedidos';
     }
 
     for (const element of document.querySelectorAll('[data-signed-in]')) {
@@ -89,7 +89,7 @@ function renderSession() {
     }
 
     for (const element of document.querySelectorAll('[data-admin-only]')) {
-        element.hidden = user?.role !== 'admin';
+        element.hidden = !Validacoes.admin(user);
     }
 
     const merge = document.getElementById('guest-merge');
@@ -188,7 +188,7 @@ function cartRow(item, mini) {
 
     const price = document.createElement('strong');
     price.className = mini ? 'd-block mt-2' : 'cart-item-price';
-    price.textContent = product ? Store.money(Store.cents(item.subtotal)) : 'Preço indisponível';
+    price.textContent = product ? Store.money(Validacoes.cents(item.subtotal)) : 'Preço indisponível';
 
     row.append(info, price);
     return row;
@@ -334,7 +334,7 @@ async function clearCart() {
 
 async function logout() {
     try {
-        await Store.run(() => Store.request('post', '/api/logout'));
+        await Store.run(UsuarioAPI.logout);
         window.location.assign('index.html');
     } catch (error) {
         Store.notice(Store.error(error), true);

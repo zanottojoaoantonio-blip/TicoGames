@@ -72,7 +72,7 @@ async function submitLogin(event) {
 
     try {
         await Store.ready.catch(() => {});
-        const user = await Store.request('post', '/api/login', credentials);
+        const user = await UsuarioAPI.login(credentials);
         await Store.acceptSession(user);
         showLoginSuccess(user);
     } catch (error) {

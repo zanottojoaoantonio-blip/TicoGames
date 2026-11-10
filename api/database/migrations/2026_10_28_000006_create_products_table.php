@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id(); // Identificador do produto.
             $table->foreignId('platform_id')->constrained()->restrictOnDelete(); // Plataforma obrigatória.
+            $table->foreignId('category_id')->constrained()->restrictOnDelete(); // Uma categoria obrigatória por produto.
             $table->string('name'); // Nome do jogo ou console.
             $table->text('description'); // Descrição com espaço para textos maiores.
             $table->decimal('price', 10, 2); // Dez dígitos no total, sendo dois decimais.

@@ -24,8 +24,8 @@ async function saveProfile(event) {
 
     try {
         await Store.run(async () => {
-            const user = await Store.request('patch', '/api/user', data);
-            Store.user = Store.account(user);
+            const user = await UsuarioAPI.update(data);
+            Store.user = Validacoes.account(user);
         });
 
         document.getElementById('profile-password').value = '';

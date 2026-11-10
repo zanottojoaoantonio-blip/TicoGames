@@ -12,7 +12,8 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id(); // Identificador do pedido.
             $table->foreignId('user_id')->constrained()->restrictOnDelete(); // Preserva o vínculo com o cliente.
-            $table->enum('status', ['pending_payment', 'paid', 'cancelled'])->default('pending_payment');
+            $table->enum('status', ['pending_payment', 'paid', 'shipped', 'delivered', 'cancelled'])->default('pending_payment');
+            $table->timestamp('paid_at')->nullable();
             $table->decimal('total', 10, 2); // O fluxo de pedidos preencherá o total calculado.
             $table->string('shipping_recipient_name'); // Cópia do destinatário.
             $table->string('shipping_postal_code', 9); // Cópia do CEP, como texto.

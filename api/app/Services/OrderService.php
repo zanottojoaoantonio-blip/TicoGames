@@ -17,7 +17,11 @@ class OrderService
 
     public function listAll(User $user, ?string $status = null): Collection
     {
-        $orders = Order::with('items')->when($user->role !== 'admin', fn ($query) => $query->where('user_id', $user->id))
+        $orders = Order::with('items')->addSelect([
+            'customer_number' => Order::from('orders as customer_orders')->selectRaw('COUNT(*)')
+                ->whereColumn('customer_orders.user_id', 'orders.user_id')
+                ->whereColumn('customer_orders.id', '<=', 'orders.id'),
+        ])->when($user->role !== 'admin', fn ($query) => $query->where('user_id', $user->id))
             ->when($status, fn ($query) => $query->where('status', $status))->orderByDesc('id')->get();
 
         return $orders;

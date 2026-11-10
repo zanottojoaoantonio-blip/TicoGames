@@ -5,6 +5,6 @@ COPY *.html /usr/share/nginx/html/
 COPY assets/ /usr/share/nginx/html/assets/
 COPY env-config.template.js /etc/nginx/templates/config.js.template
 ENV API_BASE_URL=""
-ENV NGINX_ENVSUBST_OUTPUT_DIR=/usr/share/nginx/html/assets/js
+ENV NGINX_ENVSUBST_OUTPUT_DIR=/usr/share/nginx/html/assets/js/requisicoes
 
 EXPOSE 80

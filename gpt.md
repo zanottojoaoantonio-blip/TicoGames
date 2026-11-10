@@ -56,9 +56,11 @@ No **frontend**, cada página HTML tem uma finalidade:
 | `perfil.html` | Alteração dos dados da conta | `profile.js` |
 | `admin.html` | Administração de produtos e categorias | `admin.js` |
 
-Existem dois arquivos compartilhados especialmente importantes: [store.js](front/assets/js/store.js) e [main.js](front/assets/js/main.js).
+Existem dois arquivos compartilhados especialmente importantes: [store.js](front/assets/js/requisicoes/store.js) e [main.js](front/assets/js/dom/main.js).
 
 O `store.js` centraliza a comunicação com a API e o estado conhecido pela página. O `main.js` usa esse estado para atualizar menus, mensagens e carrinhos.
+
+Os arquivos de interface ficam em `front/assets/js/dom/`. As requisições são divididas em [produto.js](front/assets/js/requisicoes/produto.js), [usuario.js](front/assets/js/requisicoes/usuario.js) e [admin.js](front/assets/js/requisicoes/admin.js). As validações compartilham o objeto `Validacoes`: [comum.js](front/assets/js/validacoes/comum.js) declara as regras básicas, e cada modelo tem seu arquivo na mesma pasta, como `product.js`, `usuario.js`, `cart.js`, `order.js`, `category.js` e `platform.js`.
 
 **O frontend atual usa JavaScript puro.** Existem comentários antigos mencionando Vue, mas as telas atuais não são componentes Vue ou React. Os arquivos de Vite e Tailwind dentro de `api/` pertencem à estrutura do Laravel; a loja em `front/` é servida diretamente pelo Nginx.
 
@@ -177,7 +179,7 @@ A primeira chamada verifica a conta autenticada. A segunda carrega o carrinho co
 
 O estado JavaScript é reconstruído ao carregar outra página. **A persistência da autenticação vem dos cookies e da sessão do Laravel; a persistência do carrinho vem do banco.**
 
-Uma chamada real de inclusão de item tem esta estrutura:
+Na interface, a inclusão de item usa `UsuarioAPI.addCartItem(productId, quantity)`. O cliente em `requisicoes/usuario.js` delega ao transporte compartilhado com esta estrutura:
 
 ```javascript
 Store.request('post', '/api/cart/items', {
@@ -235,7 +237,7 @@ No catálogo, o JavaScript também:
 - Espera 250 milissegundos após a digitação antes de pesquisar.
 - Descarta respostas antigas quando uma pesquisa mais recente já foi iniciada.
 
-Esses comportamentos estão em [catalog.js](front/assets/js/catalog.js).
+Esses comportamentos estão em [catalog.js](front/assets/js/dom/catalog.js).
 
 Os nomes e descrições recebidos são inseridos usando `textContent`. Dessa forma, o texto de um produto é apresentado como texto, sem ser interpretado como código HTML.
 
@@ -1202,7 +1204,7 @@ para somar.
 
 O último argumento define duas casas decimais.
 
-No frontend, os métodos centrais do `Store` transformam o valor em centavos usando `BigInt` e o formatam como moeda.
+No frontend, `Validacoes.cents` confere o preço e o transforma em centavos usando `BigInt`; `Store.money` o formata como moeda.
 
 O total confirmado vem do backend. Alterar o texto do preço no navegador não altera a regra de cobrança do pedido.
 
@@ -1492,4 +1494,4 @@ Para se preparar para a avaliação, tente responder estas perguntas **apontando
 
 Uma boa sequência de leitura para praticar é acompanhar **produto → cadastro/login → carrinho → pedido**. Em cada fluxo, identifique a rota, a validação, o controller, o service, os models utilizados e o resource da resposta.
 
-Esta explicação foi feita por leitura do código, sem executar a aplicação ou operações de compra. O pagamento é simulado, e a versão analisada não mantém uma suíte de testes automatizados.
+Esta explicação foi feita por leitura do código, sem executar a aplicação ou operações de compra. O pagamento é simulado. As verificações do JavaScript em `front/tests/javascript.test.cjs` usam respostas simuladas e não substituem a conferência da integração com a API.

@@ -25,15 +25,8 @@ function resetAdminForm() {
 }
 
 function renderAdminOptions(name, items) {
-    if (!Array.isArray(items)) {
-        throw new Error('Opções inválidas da API.');
-    }
-
-    for (const item of items) {
-        if (!Store.id(item?.id) || typeof item.name !== 'string') {
-            throw new Error('Opções inválidas da API.');
-        }
-    }
+    const validate = { platforms: Validacoes.platforms, categories: Validacoes.categories, genres: Validacoes.genres };
+    validate[name](items);
 
     if (name === 'platforms') {
         const select = document.getElementById('admin-platform_id');
@@ -69,7 +62,7 @@ function createAdminProductRow(product) {
         product.name,
         product.platform?.name ?? '',
         product.categories.map(category => category.name).join(' · '),
-        Store.money(Store.cents(product.price)),
+        Store.money(Validacoes.cents(product.price)),
         product.stock,
         product.is_active ? 'Ativo' : 'Inativo',
     ];
@@ -114,25 +107,13 @@ function renderAdminProducts() {
 }
 
 async function loadAdminProducts() {
-    const { data: products, meta } = await Store.request(
-        'get', `/api/products?page=${adminPage}`, undefined, true,
-    );
+    const { data: products, meta } = await ProdutoAPI.list({ page: adminPage });
 
     document.getElementById('admin-page').textContent = `Página ${meta.current_page} de ${meta.last_page}`;
     document.getElementById('admin-prev').disabled = meta.current_page <= 1;
     document.getElementById('admin-next').disabled = meta.current_page >= meta.last_page;
 
-    if (!Array.isArray(products)) {
-        throw new Error('Lista de produtos inválida.');
-    }
-
-    for (const product of products) {
-        Store.product(product);
-
-        if (!Array.isArray(product.categories) || !Array.isArray(product.genres)) {
-            throw new Error('Relacionamentos inválidos.');
-        }
-    }
+    Validacoes.products(products);
 
     adminProducts = products;
     renderAdminProducts();
@@ -168,12 +149,8 @@ function fillAdminProductForm(product) {
 async function editAdminProduct(id) {
     try {
         await Store.run(async () => {
-            const response = await Store.request('get', `/api/products/${id}`);
-            const product = Store.product(response);
-
-            if (product.id !== id) {
-                throw new Error('Produto inesperado.');
-            }
+            const response = await ProdutoAPI.get(id);
+            const product = Validacoes.adminProduct(response, id);
 
             fillAdminProductForm(product);
         });
@@ -196,7 +173,7 @@ async function deactivateAdminProduct(product) {
     }
 
     try {
-        await Store.run(() => Store.request('delete', `/api/products/${product.id}`));
+        await Store.run(() => AdminAPI.deactivateProduct(product.id));
         product.is_active = false;
         renderAdminProducts();
 
@@ -247,21 +224,8 @@ async function saveAdminProduct(event) {
         await Store.run(async () => {
             const image = document.getElementById('admin-image').files[0];
 
-            if (image) {
-                const upload = new FormData();
-                upload.append('image', image);
-                const result = await Store.request('post', '/api/product-images', upload);
-                payload.image_path = result.image_path;
-            }
-
-            const method = editingProduct ? 'patch' : 'post';
-            const url = editingProduct ? `/api/products/${editingProduct}` : '/api/products';
-            const response = await Store.request(method, url, payload);
-            const product = Store.product(response);
-
-            if (editingProduct && product.id !== editingProduct) {
-                throw new Error('Produto inesperado.');
-            }
+            const response = await AdminAPI.saveProduct(editingProduct, payload, image);
+            const product = Validacoes.adminProduct(response, editingProduct);
 
             const index = adminProducts.findIndex(item => item.id === product.id);
 
@@ -326,7 +290,7 @@ function createAdminCategoryForm(category) {
 
         try {
             await Store.run(async () => {
-                await Store.request('patch', `/api/categories/${category.id}`, {
+                await AdminAPI.saveCategory(category.id, {
                     name: input.value.trim(),
                 });
                 await loadAdminCategories();
@@ -345,7 +309,7 @@ function createAdminCategoryForm(category) {
 }
 
 async function loadAdminCategories() {
-    const categories = await Store.request('get', '/api/categories');
+    const categories = await ProdutoAPI.categories();
     const selected = adminForm.querySelector('[name="category_id"]:checked')?.value;
     renderAdminOptions('categories', categories);
 
@@ -374,7 +338,7 @@ async function removeAdminCategory(category) {
 
     try {
         await Store.run(async () => {
-            await Store.request('delete', `/api/categories/${category.id}`);
+            await AdminAPI.removeCategory(category.id);
             await loadAdminCategories();
         });
 
@@ -394,7 +358,7 @@ async function createAdminCategory(event) {
 
     try {
         await Store.run(async () => {
-            await Store.request('post', '/api/categories', {
+            await AdminAPI.saveCategory(null, {
                 name: document.getElementById('admin-category-name').value.trim(),
             });
             await loadAdminCategories();
@@ -430,16 +394,16 @@ async function initializeAdmin() {
             return;
         }
 
-        if (Store.user.role !== 'admin') {
+        if (!Validacoes.admin(Store.user)) {
             adminStatus.textContent = 'Somente administradores podem gerenciar produtos.';
             document.getElementById('admin-access').hidden = false;
             return;
         }
 
         const [platforms, categories, genres] = await Promise.all([
-            Store.request('get', '/api/platforms'),
-            Store.request('get', '/api/categories'),
-            Store.request('get', '/api/genres'),
+            ProdutoAPI.platforms(),
+            ProdutoAPI.categories(),
+            ProdutoAPI.genres(),
         ]);
 
         renderAdminOptions('platforms', platforms);

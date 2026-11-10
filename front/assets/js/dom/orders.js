@@ -18,6 +18,10 @@ const orderActionLabels = {
 let currentOrder = null;
 let selectingOrder = false;
 
+function getOrderTitle(order) {
+    return Validacoes.admin(Store.user) ? `Pedido #${order.id}` : `Pedido ${order.customer_number}`;
+}
+
 function createOrderText(tag, text, className = '') {
     const element = document.createElement(tag);
     element.textContent = text;
@@ -30,7 +34,7 @@ function getOrderActions(order) {
         return ['pay', 'cancel'];
     }
 
-    if (Store.user?.role === 'admin') {
+    if (Validacoes.admin(Store.user)) {
         if (order.status === 'paid') {
             return ['shipped'];
         }
@@ -53,7 +57,7 @@ function renderOrder() {
     items.className = 'list-group list-group-flush my-4';
 
     for (const item of order.items) {
-        const price = Store.cents(item.unit_price);
+        const price = Validacoes.cents(item.unit_price);
         const subtotal = price * BigInt(item.quantity);
         const description = `${item.quantity} × ${item.product_name}`
             + ` · ${Store.money(price)} cada · ${Store.money(subtotal)}`;
@@ -67,10 +71,10 @@ function renderOrder() {
         + ` · ${order.shipping_postal_code}`;
 
     orderDetail.replaceChildren(
-        createOrderText('h2', `Pedido #${order.id}`, 'h4'),
+        createOrderText('h2', getOrderTitle(order), 'h4'),
         createOrderText('p', orderLabels[order.status], 'fw-semibold'),
         items,
-        createOrderText('p', `Total confirmado pelo backend: ${Store.money(Store.cents(order.total))}`, 'fw-bold'),
+        createOrderText('p', `Total confirmado pelo backend: ${Store.money(Validacoes.cents(order.total))}`, 'fw-bold'),
         createOrderText('h3', 'Endereço deste pedido', 'h6 mt-4'),
         createOrderText('p', address),
     );
@@ -129,14 +133,14 @@ async function performOrderAction(order, action) {
         successMessage = 'Status atualizado.';
     } else if (isPayment) {
         title = 'Confirme a compra';
-        message = `Pedido #${order.id}, total ${Store.money(Store.cents(order.total))}.`
+        message = `${getOrderTitle(order)}, total ${Store.money(Validacoes.cents(order.total))}.`
             + ' Esta é uma confirmação de pagamento simulado.';
         confirmLabel = 'Confirmar compra';
         expectedStatus = 'paid';
         successMessage = 'Pagamento simulado confirmado.';
     } else {
         title = 'Você quer mesmo cancelar?';
-        message = `O pedido #${order.id} será cancelado e suas unidades voltarão ao estoque.`;
+        message = `O ${getOrderTitle(order).toLowerCase()} será cancelado e suas unidades voltarão ao estoque.`;
         confirmLabel = 'Cancelar pedido';
         expectedStatus = 'cancelled';
         successMessage = 'Pedido cancelado.';
@@ -150,17 +154,10 @@ async function performOrderAction(order, action) {
 
     try {
         await Store.run(async () => {
-            const method = isAdvance ? 'patch' : 'post';
-            const url = isAdvance
-                ? `/api/orders/${order.id}/status`
-                : `/api/orders/${order.id}/${action}`;
-            const payload = isAdvance ? { status: action } : {};
-            const response = await Store.request(method, url, payload);
-            const result = Store.order(response);
-
-            if (result.id !== order.id || result.status !== expectedStatus) {
-                throw new Error('Resultado inesperado do pedido.');
-            }
+            const response = isAdvance
+                ? await AdminAPI.updateOrderStatus(order.id, action)
+                : await UsuarioAPI.orderAction(order.id, action);
+            const result = Validacoes.orderResult(response, order.id, expectedStatus);
 
             currentOrder = result;
             renderOrder();
@@ -184,12 +181,8 @@ async function selectOrder(id) {
     orderDetail.replaceChildren(createOrderText('p', 'Carregando pedido...'));
 
     try {
-        const response = await Store.request('get', `/api/orders/${id}`);
-        const order = Store.order(response);
-
-        if (order.id !== id) {
-            throw new Error('Pedido inesperado.');
-        }
+        const response = await UsuarioAPI.order(id);
+        const order = Validacoes.selectedOrder(response, id);
 
         currentOrder = order;
         const url = new URL(window.location.href);
@@ -205,11 +198,11 @@ async function selectOrder(id) {
 }
 
 function createOrderListButton(order) {
-    const total = Store.money(Store.cents(order.total));
+    const total = Store.money(Validacoes.cents(order.total));
     const date = new Date(order.created_at).toLocaleDateString('pt-BR');
-    let text = `Pedido #${order.id} · ${orderLabels[order.status]} · ${total} · ${date}`;
+    let text = `${getOrderTitle(order)} · ${orderLabels[order.status]} · ${total} · ${date}`;
 
-    if (Store.user.role === 'admin') {
+    if (Validacoes.admin(Store.user)) {
         text += ` · Cliente #${order.user_id}`;
     }
 
@@ -220,21 +213,9 @@ function createOrderListButton(order) {
 }
 
 async function loadOrders() {
-    let url = '/api/orders';
+    const orders = await UsuarioAPI.orders(ordersFilter.value);
 
-    if (ordersFilter.value) {
-        url += `?status=${ordersFilter.value}`;
-    }
-
-    const orders = await Store.request('get', url);
-
-    if (!Array.isArray(orders)) {
-        throw new Error('Lista de pedidos inválida.');
-    }
-
-    for (const order of orders) {
-        Store.order(order);
-    }
+    Validacoes.orders(orders);
 
     const target = document.getElementById('orders-list');
     target.replaceChildren(...orders.map(createOrderListButton));
@@ -253,7 +234,7 @@ async function initializeOrders() {
             return;
         }
 
-        if (Store.user.role === 'admin') {
+        if (Validacoes.admin(Store.user)) {
             document.querySelector('main h1').textContent = 'Pedidos';
             document.title = 'Pedidos | TicoGames';
         }
@@ -265,7 +246,7 @@ async function initializeOrders() {
         const id = new URLSearchParams(window.location.search).get('id');
 
         if (id !== null) {
-            if (/^[1-9]\d*$/.test(id) && Store.id(Number(id))) {
+            if (Validacoes.urlId(id)) {
                 await selectOrder(Number(id));
             } else {
                 ordersStatus.textContent = 'Selecione um pedido válido na lista.';

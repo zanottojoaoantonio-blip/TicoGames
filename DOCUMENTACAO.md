@@ -50,7 +50,7 @@ Sessões/cache ficam em arquivos no volume api_storage, junto com logs, páginas
 
 Após mudar configuração da API, execute config:clear e recrie o serviço api, conforme o README. Alterações no frontend ou em API_BASE_URL exigem reconstruir/recriar frontend.
 
-O Nginx gera assets/js/config.js no início do container usando API_BASE_URL. Outra origem exige CORS com credenciais, FRONTEND_URL, host/porta do Sanctum e cookies correspondentes. Em hospedagem estática sem Docker, ajuste front/assets/js/config.js diretamente.
+O Nginx gera assets/js/requisicoes/config.js no início do container usando API_BASE_URL. Outra origem exige CORS com credenciais, FRONTEND_URL, host/porta do Sanctum e cookies correspondentes. Em hospedagem estática sem Docker, ajuste front/assets/js/requisicoes/config.js diretamente.
 
 ## Modelo de dados
 
@@ -186,6 +186,8 @@ Somente pedidos pendentes podem ser cancelados, inclusive pelo admin. O cancelam
 
 Cliente lista/consulta somente pedidos próprios; admin vê todos e pode filtrar por status. Decidir pedido alheio como cliente retorna 403; consultar retorna 404. Frete é gratuito. Não há gateway real, reembolso ou expiração automática.
 
+As respostas incluem customer_number, a sequência do pedido entre todos os pedidos do cliente (incluindo cancelados). O cliente vê “Pedido 1”, “Pedido 2” etc., sem mudar a numeração ao filtrar por status. O administrador continua vendo o ID global; rotas e ações usam id.
+
 ## Frontend
 
 | Página | Função |
@@ -199,9 +201,15 @@ Cliente lista/consulta somente pedidos próprios; admin vê todos e pode filtrar
 | perfil.html | Nome, email e senha da conta atual |
 | admin.html | Produtos, categorias, upload e acesso aos pedidos |
 
-Ordem de scripts: bibliotecas, config.js, store.js, main.js e script da página. Perfil/Pedidos aparecem nos menus desktop/móvel dos autenticados; Administração depende de admin. Admin vê “Pedidos”; cliente “Meus pedidos”. A autorização efetiva continua na API.
+O JavaScript de `front/assets/js/` está dividido em três pastas:
 
-Store centraliza Axios, validação de respostas, sessão, carrinho e dinheiro. main.js atualiza navegação/minicarrinho e mensagens/confirmações. Store.initialize consulta /api/me e /api/cart; somente 401 significa visitante. Uma falha de carrinho não impede apresentar a conta conectada. A tela encerra o carregamento e oferece nova tentativa.
+- `validacoes/`: `comum.js` reúne IDs, preços e listas; os arquivos `usuario.js`, `admin.js`, `product.js`, `cart.js`, `cart-item.js`, `order.js`, `order-item.js`, `address.js`, `category.js`, `platform.js` e `genre.js` acrescentam as regras de cada modelo ao objeto `Validacoes`.
+- `requisicoes/`: `produto.js` consulta o catálogo, categorias, plataformas e gêneros; `usuario.js` cuida de autenticação, perfil, carrinho, endereços e pedidos; `admin.js` altera produtos, imagens, categorias e status de pedidos. `config.js` e `store.js` mantêm a configuração, o transporte HTTP e o estado compartilhado.
+- `dom/`: renderização, eventos, formulários e mensagens das páginas.
+
+Ordem de scripts: bibliotecas, requisicoes/config.js, validacoes/comum.js, validações por modelo, requisicoes/produto.js, requisicoes/usuario.js, requisicoes/admin.js, requisicoes/store.js, dom/main.js e script da página em dom/. As páginas de DOM usam ProdutoAPI, UsuarioAPI e AdminAPI; os caminhos da API ficam nos três clientes de requisições. Perfil/Pedidos aparecem nos menus desktop/móvel dos autenticados; Administração depende de admin. Admin vê “Pedidos”; cliente “Meus pedidos”. A autorização efetiva continua na API.
+
+Store centraliza Axios, sessão, carrinho e formatação de dinheiro; Validacoes confere os dados recebidos antes de seu uso. main.js atualiza navegação/minicarrinho e mensagens/confirmações. Store.initialize consulta /api/me e /api/cart; somente 401 significa visitante. Uma falha de carrinho não impede apresentar a conta conectada. A tela encerra o carregamento e oferece nova tentativa.
 
 Após autenticar, Store.acceptSession consulta o carrinho já fundido. Escritas preparam CSRF; busy bloqueia envios simultâneos. Operações não são repetidas automaticamente após resposta perdida. Checkout orienta consultar pedidos antes de repetir uma criação sem resposta.
 
@@ -225,9 +233,11 @@ O marcador demo-guest-cart, guardado como hash, impede recriar pedidos ao repeti
 
 Use migrate para aplicar somente arquivos pendentes e db:seed para acrescentar exemplos. Faça backup primeiro; não use migrate:fresh, refresh ou down -v em uma base que precise preservar.
 
-A migration 2026_11_07_000001_complete_store_workflow.php copia a categoria antiga para products.category_id, permite visitante no carrinho, acrescenta estados/paid_at e reserva estoque de pendentes antigos. Antes de alterar, exige uma categoria por produto e estoque suficiente para as reservas.
+As migrations de criação já definem products.category_id obrigatório, carts.user_id opcional, carts.session_id único e opcional, os cinco estados de pedidos e orders.paid_at opcional. A antiga migration de evolução foi removida após consolidar essa estrutura nas migrations originais.
 
-category_product permanece como arquivo. Pagamentos antigos sem data precisa mantêm paid_at nulo. Reverter essa evolução exige restaurar backup, pois desfazer reservas automaticamente pode interferir em compras posteriores.
+Bases que já receberam a evolução mantêm seus dados e reservas; alterar os arquivos de criação não executa essa conversão novamente. Bases do esquema antigo precisam ser atualizadas pela versão anterior do projeto antes de usar esta versão, incluindo a cópia das categorias e a reserva de estoque dos pedidos pendentes. migrate não repete migrations já executadas.
+
+category_product permanece como arquivo, sem uso pela aplicação. Pagamentos antigos sem data precisa mantêm paid_at nulo. Reverter a conversão antiga exige restaurar backup, pois desfazer reservas automaticamente pode interferir em compras posteriores.
 
 Backups locais anteriores à carga ficam em .local-backups/, ignorada pelo Git. O backup SQL anterior à demonstração é pre-demo-20261108.sql. Preserve também os volumes api_storage e api_uploads; reconstruir imagens mantém os volumes, mas down -v os apaga.
 
@@ -245,6 +255,6 @@ docker compose logs --tail 50 api
 
 ## Conferência manual
 
-O projeto não mantém arquivos de testes automatizados, PHPUnit ou ambiente QA. As verificações de comportamento devem ser feitas pela interface/Swagger nos serviços padrão. Cadastros, alterações e compras realizados nesse ambiente modificam os dados da loja.
+Execute `node --test front/tests/javascript.test.cjs` para conferir validações por modelo, clientes de produto/usuário/admin, upload de imagens, transporte HTTP com respostas simuladas e caminhos/ordem dos scripts das oito páginas, sem instalar dependências. O projeto não inclui PHPUnit ou ambiente QA. Confira a integração com a API pela interface/Swagger nos serviços padrão. Cadastros, alterações e compras realizados nesse ambiente modificam os dados da loja.
 
 Para conferir o fluxo: adicione um item como visitante, entre na conta, confirme o carrinho, escolha endereço, crie um pedido e confirme o pagamento simulado. Confira também que somente pendentes oferecem cancelamento e que o admin avança pago para enviado/entregue.

@@ -13,7 +13,7 @@ let catalogSequence = 0;
 let catalogTimer;
 
 function createCatalogCard(product) {
-    Store.product(product);
+    Validacoes.product(product);
     const card = document.getElementById('product-card-template').content.cloneNode(true);
     card.querySelector('.product-title a').textContent = product.name;
 
@@ -24,7 +24,7 @@ function createCatalogCard(product) {
 
     card.querySelector('.product-category').textContent = product.category.name;
     card.querySelector('.platform-name').textContent = product.platform.name;
-    card.querySelector('.product-price strong').textContent = Store.money(Store.cents(product.price))
+    card.querySelector('.product-price strong').textContent = Store.money(Validacoes.cents(product.price))
         .replace('R$ ', '');
 
     const image = card.querySelector('img');
@@ -64,18 +64,14 @@ async function loadCatalogProducts() {
     catalogStatus.textContent = 'Carregando produtos...';
 
     try {
-        const { data, meta } = await Store.request(
-            'get', `/api/products?${params}`, undefined, true,
-        );
+        const { data, meta } = await ProdutoAPI.list(params);
 
         // Uma busca antiga não pode substituir o resultado da busca atual.
         if (sequence !== catalogSequence) {
             return;
         }
 
-        if (!Array.isArray(data) || !Number.isInteger(meta?.last_page)) {
-            throw new Error('Página inválida da API.');
-        }
+        Validacoes.catalogPage(data, meta);
 
         const cards = data.map(createCatalogCard);
         catalogGrid.replaceChildren(...cards);
@@ -156,16 +152,15 @@ function registerCatalogEvents() {
 async function initializeCatalog() {
     try {
         const values = await Promise.all([
-            Store.request('get', '/api/categories'),
-            Store.request('get', '/api/platforms'),
-            Store.request('get', '/api/genres'),
+            ProdutoAPI.categories(),
+            ProdutoAPI.platforms(),
+            ProdutoAPI.genres(),
         ]);
         const selects = [catalogCategory, catalogPlatform, catalogGenre];
+        const validate = [Validacoes.categories, Validacoes.platforms, Validacoes.genres];
 
         for (const [index, select] of selects.entries()) {
-            if (!Array.isArray(values[index])) {
-                throw new Error('Filtros inválidos.');
-            }
+            validate[index](values[index]);
 
             for (const item of values[index]) {
                 select.append(new Option(item.name, item.id));

@@ -19,22 +19,6 @@ const Store = {
     cartWarnings: [],
     headers: { Accept: 'application/json' },
 
-    id(value) {
-        return Number.isSafeInteger(value) && value > 0;
-    },
-
-    quantity(value) {
-        return Store.id(value) && value <= 4294967295;
-    },
-
-    cents(value) {
-        if (typeof value !== 'string' || !/^\d{1,20}\.\d{2}$/.test(value)) {
-            throw new Error('Preço inválido recebido da API.');
-        }
-
-        return BigInt(value.replace('.', ''));
-    },
-
     money(cents) {
         const whole = new Intl.NumberFormat('pt-BR').format(cents / 100n);
         const fraction = String(cents % 100n).padStart(2, '0');
@@ -43,76 +27,7 @@ const Store = {
     },
 
     total() {
-        return Store.cents(Store.cartTotal);
-    },
-
-    product(product) {
-        if (
-            !Store.id(product?.id)
-            || typeof product.name !== 'string'
-            || typeof product.image_path !== 'string'
-            || !Number.isInteger(product.stock)
-            || product.stock < 0
-            || typeof product.is_active !== 'boolean'
-        ) {
-            throw new Error('Produto inválido recebido da API.');
-        }
-
-        Store.cents(product.price);
-        return product;
-    },
-
-    account(user) {
-        if (
-            !Store.id(user?.id)
-            || typeof user.name !== 'string'
-            || !['customer', 'admin'].includes(user.role)
-        ) {
-            throw new Error('Conta inválida recebida da API.');
-        }
-
-        return user;
-    },
-
-    order(order) {
-        const statuses = ['pending_payment', 'paid', 'shipped', 'delivered', 'cancelled'];
-
-        if (
-            !Store.id(order?.id)
-            || !statuses.includes(order.status)
-            || !Array.isArray(order.items)
-            || !order.items.length
-        ) {
-            throw new Error('Pedido inválido recebido da API.');
-        }
-
-        for (const item of order.items) {
-            if (
-                !Store.id(item?.id)
-                || typeof item.product_name !== 'string'
-                || !Store.quantity(item.quantity)
-            ) {
-                throw new Error('Pedido inválido recebido da API.');
-            }
-        }
-
-        Store.cents(order.total);
-
-        for (const item of order.items) {
-            Store.cents(item.unit_price);
-        }
-
-        const addressFields = [
-            'recipient_name', 'postal_code', 'street', 'number', 'neighborhood', 'city', 'state',
-        ];
-
-        for (const field of addressFields) {
-            if (typeof order[`shipping_${field}`] !== 'string') {
-                throw new Error('Endereço histórico inválido.');
-            }
-        }
-
-        return order;
+        return Validacoes.cents(Store.cartTotal);
     },
 
     changed() {
@@ -176,28 +91,7 @@ const Store = {
     },
 
     setCart(cart) {
-        if (!Array.isArray(cart?.items)) {
-            throw new Error('Carrinho inválido recebido da API.');
-        }
-
-        for (const item of cart.items) {
-            if (
-                !Store.id(item?.id)
-                || !Store.id(item.product_id)
-                || !Store.quantity(item.quantity)
-                || Store.product(item.product).id !== item.product_id
-            ) {
-                throw new Error('Carrinho inválido recebido da API.');
-            }
-        }
-
-        Store.cents(cart.total);
-        Store.cents(cart.subtotal);
-        Store.cents(cart.shipping_cost);
-
-        for (const item of cart.items) {
-            Store.cents(item.subtotal);
-        }
+        Validacoes.cart(cart);
 
         Store.cartTotal = cart.total;
         Store.cartSubtotal = cart.subtotal;
@@ -218,7 +112,7 @@ const Store = {
         Store.changed();
 
         try {
-            const cart = await Store.request('get', '/api/cart');
+            const cart = await UsuarioAPI.cart();
             Store.setCart(cart);
         } catch (error) {
             Store.cartError = error;
@@ -231,8 +125,8 @@ const Store = {
 
     async loadSession() {
         try {
-            const user = await Store.request('get', '/api/me');
-            Store.user = Store.account(user);
+            const user = await UsuarioAPI.me();
+            Store.user = Validacoes.account(user);
         } catch (error) {
             if (error.response?.status !== 401) {
                 Store.sessionError = error;
@@ -298,15 +192,12 @@ const Store = {
     async add(productId, quantity) {
         await Store.ensureReady();
 
-        if (!Store.id(productId)) {
+        if (!Validacoes.id(productId)) {
             throw new Error('Produto inválido.');
         }
 
         return Store.run(async () => {
-            const cart = await Store.request('post', '/api/cart/items', {
-                product_id: productId,
-                quantity,
-            });
+            const cart = await UsuarioAPI.addCartItem(productId, quantity);
 
             Store.setCart(cart);
         });
@@ -315,12 +206,12 @@ const Store = {
     async update(itemId, quantity) {
         await Store.ensureReady();
 
-        if (!Store.id(itemId)) {
+        if (!Validacoes.id(itemId)) {
             throw new Error('Item inválido.');
         }
 
         return Store.run(async () => {
-            const cart = await Store.request('patch', `/api/cart/items/${itemId}`, { quantity });
+            const cart = await UsuarioAPI.updateCartItem(itemId, quantity);
             Store.setCart(cart);
         });
     },
@@ -328,12 +219,12 @@ const Store = {
     async remove(itemId) {
         await Store.ensureReady();
 
-        if (!Store.id(itemId)) {
+        if (!Validacoes.id(itemId)) {
             throw new Error('Item inválido.');
         }
 
         return Store.run(async () => {
-            await Store.request('delete', `/api/cart/items/${itemId}`);
+            await UsuarioAPI.removeCartItem(itemId);
             await Store.loadCart();
         });
     },
@@ -342,14 +233,14 @@ const Store = {
         await Store.session;
 
         return Store.run(async () => {
-            await Store.request('delete', '/api/cart');
+            await UsuarioAPI.clearCart();
             await Store.loadCart();
             Store.ready = Promise.resolve();
         });
     },
 
     async acceptSession(user) {
-        Store.user = Store.account(user);
+        Store.user = Validacoes.account(user);
         Store.sessionLoaded = true;
         Store.sessionError = null;
         Store.session = Promise.resolve();

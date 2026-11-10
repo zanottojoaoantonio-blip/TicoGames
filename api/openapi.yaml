@@ -4128,6 +4128,10 @@ components:
         id:
           type: integer
           minimum: 1
+        customer_number:
+          type: integer
+          minimum: 1
+          description: 'Sequência do pedido entre todos os pedidos deste cliente, incluindo cancelados e independentemente do filtro por status. O id continua sendo usado nas rotas.'
         user_id:
           type: integer
           minimum: 1

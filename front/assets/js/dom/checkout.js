@@ -3,9 +3,7 @@ const addressForm = document.getElementById('address-form');
 const addressFields = document.getElementById('address-fields');
 const addressStatus = document.getElementById('address-status');
 const createOrderButton = document.getElementById('create-order');
-const addressNames = [
-    'recipient_name', 'postal_code', 'street', 'number', 'neighborhood', 'city', 'state',
-];
+const addressNames = Validacoes.addressFields;
 
 let addresses = [];
 let selectedAddress = null;
@@ -16,8 +14,8 @@ function renderCheckoutSummary() {
     const target = document.getElementById('checkout-summary');
     const items = Store.cart.map(item => {
         const name = item.product?.name ?? 'Produto indisponível';
-        const price = item.product ? Store.money(Store.cents(item.product.price)) : '—';
-        const subtotal = Store.money(Store.cents(item.subtotal));
+        const price = item.product ? Store.money(Validacoes.cents(item.product.price)) : '—';
+        const subtotal = Store.money(Validacoes.cents(item.subtotal));
         const text = document.createElement('p');
         text.className = 'small';
         text.textContent = `${item.quantity} × ${name} · ${price} cada · subtotal ${subtotal}`;
@@ -27,7 +25,7 @@ function renderCheckoutSummary() {
     target.replaceChildren(...items);
 
     const shipping = document.createElement('p');
-    const shippingCost = Store.money(Store.cents(Store.shippingCost));
+    const shippingCost = Store.money(Validacoes.cents(Store.shippingCost));
     shipping.textContent = `Frete: ${shippingCost} (gratuito para todos os pedidos).`;
     target.append(shipping);
 
@@ -58,23 +56,9 @@ function resetAddressForm() {
 }
 
 async function loadAddresses() {
-    const data = await Store.request('get', '/api/addresses');
+    const data = await UsuarioAPI.addresses();
 
-    if (!Array.isArray(data)) {
-        throw new Error('Endereços inválidos.');
-    }
-
-    for (const address of data) {
-        if (!Store.id(address?.id)) {
-            throw new Error('Endereços inválidos.');
-        }
-
-        for (const field of addressNames) {
-            if (typeof address[field] !== 'string') {
-                throw new Error('Endereços inválidos.');
-            }
-        }
-    }
+    Validacoes.addresses(data);
 
     addresses = data;
 
@@ -143,11 +127,9 @@ function renderAddresses() {
 async function editAddress(id) {
     try {
         await Store.run(async () => {
-            const address = await Store.request('get', `/api/addresses/${id}`);
+            const address = await UsuarioAPI.address(id);
 
-            if (address.id !== id) {
-                throw new Error('Endereço inesperado.');
-            }
+            Validacoes.selectedAddress(address, id);
 
             resetAddressForm();
             editingAddress = address.id;
@@ -179,7 +161,7 @@ async function removeAddress(address) {
 
     try {
         await Store.run(async () => {
-            await Store.request('delete', `/api/addresses/${address.id}`);
+            await UsuarioAPI.removeAddress(address.id);
 
             if (editingAddress === address.id) {
                 resetAddressForm();
@@ -214,13 +196,8 @@ async function saveAddress(event) {
 
     try {
         await Store.run(async () => {
-            const method = editingAddress ? 'patch' : 'post';
-            const url = editingAddress ? `/api/addresses/${editingAddress}` : '/api/addresses';
-            const address = await Store.request(method, url, payload);
-
-            if (!Store.id(address?.id)) {
-                throw new Error('Endereço inválido.');
-            }
+            const address = await UsuarioAPI.saveAddress(editingAddress, payload);
+            Validacoes.savedAddress(address);
 
             selectedAddress = address.id;
             resetAddressForm();
@@ -244,14 +221,8 @@ async function createCheckoutOrder() {
 
     try {
         await Store.run(async () => {
-            const response = await Store.request('post', '/api/orders', {
-                address_id: selectedAddress,
-            });
-            const order = Store.order(response);
-
-            if (order.status !== 'pending_payment') {
-                throw new Error('Estado inesperado do pedido criado.');
-            }
+            const response = await UsuarioAPI.createOrder(selectedAddress);
+            const order = Validacoes.createdOrder(response);
 
             window.location.assign(`pedidos.html?id=${order.id}`);
         });

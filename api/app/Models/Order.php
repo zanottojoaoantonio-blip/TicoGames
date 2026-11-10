@@ -17,7 +17,7 @@ class Order extends Model
      * total será calculado no servidor e status seguirá as transições permitidas.
      * Os campos shipping_* preservam o endereço, mesmo se o cadastro mudar.
      * A cópia do endereço será preenchida na criação do pedido, na etapa de CRUD.
-     * O padrão pending_payment e os três valores de status serão definidos na migration.
+     * O padrão pending_payment e os cinco estados são definidos na migration de criação.
      *
      * @var list<string>
      */

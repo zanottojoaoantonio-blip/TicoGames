@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +13,8 @@ class OrderResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'customer_number' => (int) ($this->customer_number ?? Order::where('user_id', $this->user_id)
+                ->where('id', '<=', $this->id)->count()),
             'status' => $this->status,
             'user_id' => $this->user_id,
             'created_at' => $this->created_at?->toISOString(),

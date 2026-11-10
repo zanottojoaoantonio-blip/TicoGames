@@ -34,6 +34,8 @@ docker compose exec -T api php artisan db:seed --force
 
 Faça backup antes de atualizar uma base existente. Os seeders acrescentam dados sem reiniciar preço, estoque ou contas já cadastradas.
 
+As migrations de criação foram consolidadas com o esquema atual. Bases antigas que ainda não receberam a conversão de categorias, carrinhos de visitantes e reservas de pedidos precisam ser atualizadas pela versão anterior do projeto antes de usar esta versão; `migrate` não reaplica arquivos já executados. Veja [Migrations, backups e manutenção](DOCUMENTACAO.md#migrations-backups-e-manutenção).
+
 ## Acessos
 
 | Recurso | Endereço |
@@ -43,7 +45,7 @@ Faça backup antes de atualizar uma base existente. Os seeders acrescentam dados
 | Contrato OpenAPI | [http://localhost/api/openapi.yaml](http://localhost/api/openapi.yaml) |
 | Saúde da API | [http://localhost/up](http://localhost/up) |
 
-O Compose contém somente `mysql`, `api`, `frontend` e `proxy`. Banco, sessões, cache, logs, arquivos privados e uploads ficam em volumes persistentes do Docker. O volume `api_storage` guarda o storage da API; `api_uploads` continua exclusivo para imagens públicas. O projeto não inclui suítes automatizadas ou ambiente QA.
+O Compose contém somente `mysql`, `api`, `frontend` e `proxy`. Banco, sessões, cache, logs, arquivos privados e uploads ficam em volumes persistentes do Docker. O volume `api_storage` guarda o storage da API; `api_uploads` continua exclusivo para imagens públicas. As verificações do JavaScript podem ser executadas com `node --test front/tests/javascript.test.cjs`, sem dependências adicionais. O projeto não inclui ambiente QA.
 
 ## Contas de demonstração
 
