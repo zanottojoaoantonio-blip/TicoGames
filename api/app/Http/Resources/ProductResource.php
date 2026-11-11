@@ -23,8 +23,6 @@ class ProductResource extends JsonResource
             'platform' => new PlatformResource($this->whenLoaded('platform')),
             'categories' => CategoryResource::collection($this->whenLoaded('category', fn () => collect([$this->category]))),
             'genres' => GenreResource::collection($this->whenLoaded('genres')),
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

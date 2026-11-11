@@ -20,13 +20,25 @@ Route::middleware([RequireFrontendSession::class, 'throttle:6,1'])->group(functi
     Route::post('login', [AuthController::class, 'login']);
 });
 
-foreach (['products' => ProductController::class, 'categories' => CategoryController::class,
-    'platforms' => PlatformController::class, 'genres' => GenreController::class] as $resource => $controller) {
-    Route::apiResource($resource, $controller)->only(['index', 'show'])
-        ->parameters([$resource => 'id'])->whereNumber('id');
-    Route::apiResource($resource, $controller)->only(['store', 'update', 'destroy'])
-        ->parameters([$resource => 'id'])->whereNumber('id')->middleware(['auth:sanctum', 'admin']);
-}
+Route::apiResource('products', ProductController::class)->only(['index', 'show'])
+    ->parameters(['products' => 'id'])->whereNumber('id');
+Route::apiResource('products', ProductController::class)->only(['store', 'update', 'destroy'])
+    ->parameters(['products' => 'id'])->whereNumber('id')->middleware(['auth:sanctum', 'admin']);
+
+Route::apiResource('categories', CategoryController::class)->only(['index', 'show'])
+    ->parameters(['categories' => 'id'])->whereNumber('id');
+Route::apiResource('categories', CategoryController::class)->only(['store', 'update', 'destroy'])
+    ->parameters(['categories' => 'id'])->whereNumber('id')->middleware(['auth:sanctum', 'admin']);
+
+Route::apiResource('platforms', PlatformController::class)->only(['index', 'show'])
+    ->parameters(['platforms' => 'id'])->whereNumber('id');
+Route::apiResource('platforms', PlatformController::class)->only(['store', 'update', 'destroy'])
+    ->parameters(['platforms' => 'id'])->whereNumber('id')->middleware(['auth:sanctum', 'admin']);
+
+Route::apiResource('genres', GenreController::class)->only(['index', 'show'])
+    ->parameters(['genres' => 'id'])->whereNumber('id');
+Route::apiResource('genres', GenreController::class)->only(['store', 'update', 'destroy'])
+    ->parameters(['genres' => 'id'])->whereNumber('id')->middleware(['auth:sanctum', 'admin']);
 
 Route::middleware(RequireFrontendSession::class)->group(function () {
     Route::get('cart', [CartController::class, 'show']);
